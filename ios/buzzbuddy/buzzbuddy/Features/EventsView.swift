@@ -97,7 +97,7 @@ struct EventsView: View {
                         .font(.system(size: 26, weight: .semibold))
                         .foregroundStyle(.white)
                         .frame(width: 68, height: 68)
-                        .background(Circle().fill(Color.accentColor))
+                        .background(Circle().fill(Color.yellow))
                         .shadow(color: .black.opacity(0.2), radius: 6, y: 3)
                 }
                 .padding(.trailing, 20)
@@ -157,10 +157,9 @@ private struct EventCard: View {
                 Button {
                     onDelete()
                 } label: {
-                    Image(systemName: "checkmark.circle.fill")
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, Color.accentColor)
+                    Image(systemName: "checkmark.circle")
                         .font(.system(size: 24))
+                        .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
             }
@@ -190,6 +189,10 @@ private struct EventCard: View {
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color(.systemGray4), lineWidth: 1)
         )
     }
 

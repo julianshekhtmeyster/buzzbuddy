@@ -191,12 +191,12 @@ struct AddEventView: View {
             } label: {
                 Text("Save")
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(isFormComplete ? .white : Color.gray)
                     .padding(.horizontal, 36)
                     .padding(.vertical, 14)
                     .background(
                         Capsule()
-                            .fill(isFormComplete ? Color.accentColor : Color.accentColor.opacity(0.35))
+                            .fill(isFormComplete ? Color.yellow : Color.yellow.opacity(0.35))
                     )
             }
             .disabled(!isFormComplete)
@@ -237,6 +237,10 @@ struct AddEventView: View {
             .background(
                 RoundedRectangle(cornerRadius: 10)
                     .fill(Color(.secondarySystemBackground))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color(.systemGray4), lineWidth: 1)
             )
         }
     }
@@ -285,6 +289,10 @@ private struct LocationField: View {
         .background(
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4), lineWidth: 1)
         )
     }
 
@@ -340,7 +348,7 @@ private struct LocationField: View {
             HStack(alignment: .top, spacing: 10) {
                 Image(systemName: "mappin.circle.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(.white)
                     .padding(.top, 1)
 
                 VStack(alignment: .leading, spacing: 2) {
@@ -360,7 +368,7 @@ private struct LocationField: View {
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .font(.system(size: 18))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.white)
                 }
             }
         }
@@ -435,6 +443,10 @@ private struct ContactField: View {
             RoundedRectangle(cornerRadius: 10)
                 .fill(Color(.secondarySystemBackground))
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
     }
 
     private var suggestionsList: some View {
@@ -481,7 +493,7 @@ private struct ContactField: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.system(size: 18))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.white)
             }
         }
         .padding(.horizontal, 12)
