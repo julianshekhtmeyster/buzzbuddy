@@ -22,20 +22,7 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     baseline = relationship("Baseline", back_populates="user", uselist=False)
-    dd_contacts = relationship("DDContact", back_populates="user")
     events = relationship("Event", back_populates="user")
-
-
-class DDContact(Base):
-    __tablename__ = "dd_contacts"
-
-    id = Column(String, primary_key=True, default=gen_uuid)
-    user_id = Column(String, ForeignKey("users.id"), nullable=False)
-    name = Column(String, nullable=False)
-    phone_number = Column(String, nullable=True)
-    email = Column(String, nullable=True)
-
-    user = relationship("User", back_populates="dd_contacts")
 
 
 class Baseline(Base):

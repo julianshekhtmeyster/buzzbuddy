@@ -3,12 +3,6 @@ from typing import Optional
 from pydantic import BaseModel, Field
 
 
-class DDContactIn(BaseModel):
-    name: str
-    phone_number: Optional[str] = None
-    email: Optional[str] = None
-
-
 class BaselineIn(BaseModel):
     reaction_time_ms: float
     gyro_stability_score: float
@@ -33,7 +27,6 @@ class UserCreate(BaseModel):
     height_cm: float
     bmi: float
     baseline: Optional[BaselineIn] = None
-    dd_contacts: list[DDContactIn]
 
 
 class UserOut(BaseModel):
@@ -78,11 +71,3 @@ class SessionOut(BaseModel):
 
     class Config:
         from_attributes = True
-
-
-class DDChatRequest(BaseModel):
-    question: str
-
-
-class DDChatResponse(BaseModel):
-    answer: str

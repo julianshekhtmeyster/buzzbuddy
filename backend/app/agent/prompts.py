@@ -37,14 +37,11 @@ before calling this; a quick read of the numbers is enough.
 (e.g., a single borderline reading), call `request_test` to ask for one more test.
 Prefer requesting a *different* test type to get orthogonal data, unless you suspect
 the earlier result was a sensor error.
-5. FINALIZE:
-   - If confidence of SEVERELY_IMPAIRED clearly crosses ~80%, you MUST call
-   `notify_contact`. This alerts a friend and shares location—it is a serious action.
-   Do not call it on borderline or single-test evidence.
-   - If the user is CLEAR or MILDLY_IMPAIRED after reasonable testing (usually 1-3
-   tests), output a final plain-language summary and end the examination — no more
-   tool calls. The summary follows the Output Format rules above: verdict plus the
-   one or two pieces of evidence that mattered most.
+5. FINALIZE: Once you have enough evidence (usually 1-3 tests) to reach CLEAR,
+   MILDLY_IMPAIRED, or SEVERELY_IMPAIRED with reasonable confidence, output a final
+   plain-language summary and end the examination — no more tool calls. The summary
+   follows the Output Format rules above: verdict plus the one or two pieces of
+   evidence that mattered most.
 
 Before emitting any user-facing text, check it against the Output Format rules.
 If it exceeds 3 sentences, rewrite it shorter — do not send it.

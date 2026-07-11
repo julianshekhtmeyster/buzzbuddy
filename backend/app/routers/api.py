@@ -2,14 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException
 from openai import OpenAIError
 from sqlalchemy.orm import Session as DBSession
 
-from ..agent.dd_companion import ask_dd_companion
 from ..agent.loop import AgentTurnStalledError, run_agent_turn
 from ..database import get_db
-from ..models import AgentSession, Baseline, DDContact, Event, TestResult, User
+from ..models import AgentSession, Baseline, Event, TestResult, User
 from ..schemas import (
     BaselineUpdate,
-    DDChatRequest,
-    DDChatResponse,
     EventCreate,
     EventOut,
     SessionOut,
@@ -50,8 +47,6 @@ def create_user(payload: UserCreate, db: DBSession = Depends(get_db)):
                 memory_recall_percent=payload.baseline.memory_recall_percent,
             )
         )
-    for contact in payload.dd_contacts:
-        db.add(DDContact(user_id=user.id, **contact.model_dump()))
 
     db.commit()
     db.refresh(user)

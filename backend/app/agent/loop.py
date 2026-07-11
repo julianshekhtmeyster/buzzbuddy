@@ -10,9 +10,9 @@ from .client import client
 from .prompts import SYSTEM_PROMPT
 
 MAX_ITERATIONS = 6
-# Tool calls after which we must hand control back to the user (need new sensor
-# input, or the session is over) rather than keep looping the model.
-BLOCKING_TOOLS = {"request_test", "notify_contact"}
+# Tool calls after which we must hand control back to the user (needs new
+# sensor input) rather than keep looping the model.
+BLOCKING_TOOLS = {"request_test"}
 
 
 class AgentTurnStalledError(Exception):

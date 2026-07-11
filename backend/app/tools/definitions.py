@@ -94,26 +94,4 @@ TOOLS = [
             },
         },
     },
-    {
-        "type": "function",
-        "function": {
-            "name": "notify_contact",
-            "description": (
-                "Alert the user's designated driver contacts because confidence "
-                "of severe impairment has crossed the safety threshold. This "
-                "ends the session. Never include a BAC estimate or a statement "
-                "about legal fitness to drive in the message."
-            ),
-            "parameters": {
-                "type": "object",
-                "properties": {
-                    "message": {
-                        "type": "string",
-                        "description": "Message to send to the DD contacts",
-                    }
-                },
-                "required": ["message"],
-            },
-        },
-    },
 ]
