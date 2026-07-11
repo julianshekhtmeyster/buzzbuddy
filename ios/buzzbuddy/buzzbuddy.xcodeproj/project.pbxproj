@@ -414,7 +414,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = buzzbuddy/Info.plist;
-				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy accesses your contacts so you can pick a designated driver contact for an event.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "BuzzBuddy shares your location with your designated driver contacts if a check indicates severe impairment.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "BuzzBuddy uses motion data to measure your steadiness during the balance test.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -446,7 +445,6 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = buzzbuddy/Info.plist;
-				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy accesses your contacts so you can pick a designated driver contact for an event.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "BuzzBuddy shares your location with your designated driver contacts if a check indicates severe impairment.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "BuzzBuddy uses motion data to measure your steadiness during the balance test.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
