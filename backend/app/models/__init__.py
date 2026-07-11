@@ -91,7 +91,13 @@ class Baseline(Base):
     user_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False)
     reaction_time_ms = Column(Float, nullable=False)
     gyro_stability_score = Column(Float, nullable=False)
-    memory_recall_score = Column(Float, nullable=False)
+    # Python attribute renamed to `memory_recall_percent` -- the value is a
+    # 0-100 percentage, not a 0-1 proportion. The SQL column name is kept as
+    # `memory_recall_score` to avoid an Alembic migration. Rows created
+    # before this rename may still hold stale 0-1-scale placeholder values;
+    # those get corrected the next time that user completes the
+    # baseline-upgrade flow (PATCH /users/{user_id}/baseline).
+    memory_recall_percent = Column("memory_recall_score", Float, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     user = relationship("User", back_populates="baseline")

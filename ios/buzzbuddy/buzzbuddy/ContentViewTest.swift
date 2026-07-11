@@ -11,7 +11,16 @@ struct ContentViewTest: View {
     @StateObject private var appState = AppState()
 
     var body: some View {
-        Group {
+
+        NavigationStack {
+
+
+            Text("game")
+                .font(.largeTitle)
+                .navigationTitle("gahh")
+        }
+        /*
+       Group {
             switch appState.phase {
 
             case .onboarding:
@@ -61,9 +70,7 @@ struct ContentViewTest: View {
             }
         }
         .environmentObject(appState)
-    }
-}
+        */
 
-#Preview {
-    ContentViewTest()
+    }
 }

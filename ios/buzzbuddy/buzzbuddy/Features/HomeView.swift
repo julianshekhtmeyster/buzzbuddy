@@ -1,22 +1,26 @@
-//
-//  HomeView.swift
-//  buzzbuddy
-//
-//  Created by Max DeWeese on 7/10/26.
-//
-
 import SwiftUI
 
 struct HomeView: View {
+    @EnvironmentObject var engine: GameSessionEngine
+    @State private var showingTest = false
+
     var body: some View {
         NavigationStack {
-            SafetyCheckFlowView()
-                .navigationTitle("BuzzBuddy")
-                .navigationBarTitleDisplayMode(.inline)
+            VStack {
+                Button("Start Test") {
+                    engine.startTest()
+                    showingTest = true
+                }
+            }
+            .fullScreenCover(isPresented: $showingTest) {
+                TestSessionView()
+            }
+            .onChange(of: engine.finished) { _, finished in
+                if finished {
+                    showingTest = false
+                }
+            }
+            .navigationTitle("Home")
         }
     }
-}
-
-#Preview {
-    HomeView().environmentObject(AppState())
 }

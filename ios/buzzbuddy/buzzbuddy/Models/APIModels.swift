@@ -72,7 +72,17 @@ struct DDContactOut: Codable, Identifiable, Hashable {
 struct BaselineIn: Codable {
     var reactionTimeMs: Double
     var gyroStabilityScore: Double
-    var memoryRecallScore: Double
+    /// 0...100 percentage, not a 0...1 proportion.
+    var memoryRecallPercent: Double
+}
+
+/// Partial baseline update for PATCH /users/{id}/baseline -- only set the
+/// field(s) actually being (re)captured, e.g. a missing-baseline migration
+/// for an existing user only sends `memoryRecallPercent`.
+struct BaselineUpdate: Codable {
+    var reactionTimeMs: Double?
+    var gyroStabilityScore: Double?
+    var memoryRecallPercent: Double?
 }
 
 struct UserCreate: Codable {
@@ -143,6 +153,30 @@ struct SessionOut: Codable {
     var notificationStatus: String?
     var notificationAttemptId: String?
     var selectedContact: DDContactOut?
+
+    init(
+        id: String,
+        eventId: String,
+        status: String,
+        confidence: Double,
+        pendingTest: String?,
+        reasoningLog: [String],
+        notified: Bool,
+        notificationStatus: String? = nil,
+        notificationAttemptId: String? = nil,
+        selectedContact: DDContactOut? = nil
+    ) {
+        self.id = id
+        self.eventId = eventId
+        self.status = status
+        self.confidence = confidence
+        self.pendingTest = pendingTest
+        self.reasoningLog = reasoningLog
+        self.notified = notified
+        self.notificationStatus = notificationStatus
+        self.notificationAttemptId = notificationAttemptId
+        self.selectedContact = selectedContact
+    }
 
     private enum CodingKeys: String, CodingKey {
         case id, eventId, status, confidence, pendingTest, reasoningLog, notified

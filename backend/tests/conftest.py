@@ -48,7 +48,7 @@ def user_payload():
         "baseline": {
             "reaction_time_ms": 250,
             "gyro_stability_score": 0.2,
-            "memory_recall_score": 90,
+            "memory_recall_percent": 90,
         },
         "dd_contacts": [
             {

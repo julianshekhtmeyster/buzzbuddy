@@ -29,9 +29,22 @@
 		0E0E8EE53001DBB9001C9AAB /* buzzbuddyUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = buzzbuddyUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		0E0E8EF73001DBB9001C9AAD /* Exceptions for "buzzbuddy" folder in "buzzbuddy" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 0E0E8ECD3001DBB7001C9AAB /* buzzbuddy */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		0E0E8ED03001DBB7001C9AAB /* buzzbuddy */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				0E0E8EF73001DBB9001C9AAD /* Exceptions for "buzzbuddy" folder in "buzzbuddy" target */,
+			);
 			path = buzzbuddy;
 			sourceTree = "<group>";
 		};
@@ -171,7 +184,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1640;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2660;
 				TargetAttributes = {
 					0E0E8ECD3001DBB7001C9AAB = {
 						CreatedOnToolsVersion = 16.4;
@@ -327,6 +340,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -383,6 +397,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -398,10 +413,11 @@
 				CODE_SIGN_ENTITLEMENTS = buzzbuddy/buzzbuddy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D76FR4P88C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
-				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy lets you choose the person who should receive a safety alert.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy accesses your contacts so you can pick a designated driver contact for an event.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "BuzzBuddy shares your location with your designated driver contacts if a check indicates severe impairment.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "BuzzBuddy uses motion data to measure your steadiness during the balance test.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -432,10 +448,11 @@
 				CODE_SIGN_ENTITLEMENTS = buzzbuddy/buzzbuddy.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = D76FR4P88C;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = Config/Info.plist;
-				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy lets you choose the person who should receive a safety alert.";
+				INFOPLIST_KEY_NSContactsUsageDescription = "BuzzBuddy accesses your contacts so you can pick a designated driver contact for an event.";
 				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "BuzzBuddy shares your location with your designated driver contacts if a check indicates severe impairment.";
 				INFOPLIST_KEY_NSMotionUsageDescription = "BuzzBuddy uses motion data to measure your steadiness during the balance test.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;

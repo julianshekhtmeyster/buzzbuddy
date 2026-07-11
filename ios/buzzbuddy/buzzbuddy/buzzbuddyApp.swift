@@ -7,12 +7,81 @@
 
 import SwiftUI
 
+struct Game: Identifiable {
+    let id = UUID()
+
+    let name: String
+
+    let view: AnyView
+}
+
+struct GameLibrary {
+    // LIST OF GAMES
+    static let games: [Game] = [
+
+        Game(
+            name: "Reaction",
+            view: AnyView(
+                ReactionGame()
+            )
+        ),
+
+        Game(
+            name: "Balance",
+            view: AnyView(
+                BalanceGame()
+            )
+        ),
+        Game(
+            name: "Memory",
+            view: AnyView(
+                MemoryGame()
+            )
+        )
+
+    ]
+    // LIST OF GAMES
+}
+
+class GameSessionEngine: ObservableObject {
+
+    @Published var selectedGames: [Game] = []
+
+    @Published var currentIndex = 0
+
+    var currentGame: Game? {
+        guard currentIndex < selectedGames.count else {
+            return nil
+        }
+        return selectedGames[currentIndex]
+    }
+
+    func startTest(numberOfGames: Int = 3) {
+        selectedGames = Array(
+            GameLibrary.games.shuffled()
+                .prefix(numberOfGames)
+        )
+        currentIndex = 0
+    }
+
+    func nextGame() {
+        currentIndex += 1
+    }
+
+    var finished: Bool {
+        !selectedGames.isEmpty && currentIndex >= selectedGames.count
+    }
+}
+
+
+
 @main
 struct BuzzBuddyApp: App {
     @UIApplicationDelegateAdaptor(BuzzBuddyAppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState()
     @StateObject private var trustedContacts = TrustedContactStore()
     @StateObject private var pushNotifications = PushNotificationManager.shared
+    @StateObject private var engine = GameSessionEngine()
 
     var body: some Scene {
         WindowGroup {
@@ -20,6 +89,7 @@ struct BuzzBuddyApp: App {
                 .environmentObject(appState)
                 .environmentObject(trustedContacts)
                 .environmentObject(pushNotifications)
+                .environmentObject(engine)
                 .task {
                     await pushNotifications.prepare()
                     await appState.refreshContacts()

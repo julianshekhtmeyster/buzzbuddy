@@ -43,8 +43,6 @@ def _normalize_phone_number(value: Optional[str]) -> Optional[str]:
     if len(digits) == 11 and digits.startswith("1"):
         return f"+{digits}"
     raise ValueError("phone_number must be an E.164 number (for example +14155552671)")
-
-
 class DDContactIn(BaseModel):
     name: str = Field(min_length=1, max_length=100)
     phone_number: Optional[str] = None
@@ -73,7 +71,18 @@ class DDContactOut(BaseModel):
 class BaselineIn(BaseModel):
     reaction_time_ms: float
     gyro_stability_score: float
-    memory_recall_score: float
+    # Recall accuracy as a 0-100 percentage, not a 0-1 proportion.
+    memory_recall_percent: float = Field(ge=0, le=100)
+
+
+class BaselineUpdate(BaseModel):
+    """Partial baseline update for PATCH /users/{user_id}/baseline. Only the
+    fields actually being (re)captured should be set -- e.g. an existing user
+    missing just the memory baseline sends only memory_recall_percent."""
+
+    reaction_time_ms: Optional[float] = None
+    gyro_stability_score: Optional[float] = None
+    memory_recall_percent: Optional[float] = Field(default=None, ge=0, le=100)
 
 
 class UserCreate(BaseModel):

@@ -54,7 +54,13 @@ final class ContactCredentialStore {
     }
 }
 
-final class OwnerCredentialStore {
+protocol OwnerCredentialStoring {
+    func save(_ token: String, for userId: String) throws
+    func token(for userId: String) -> String?
+    func delete(for userId: String)
+}
+
+final class OwnerCredentialStore: OwnerCredentialStoring {
     private let service = "mjj.buzzbuddy.owner"
 
     func save(_ token: String, for userId: String) throws {

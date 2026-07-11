@@ -14,28 +14,72 @@ enum APIError: LocalizedError {
     }
 }
 
-final class BuzzBuddyAPI {
-    private let configuredBaseURL: URL?
+protocol BuzzBuddyAPIProtocol {
+    func createUser(_ payload: UserCreate) async throws -> UserOut
+    func updateBaseline(userId: String, _ payload: BaselineUpdate, bearerToken: String) async throws -> UserOut
+    func getContacts(userId: String, bearerToken: String) async throws -> [DDContactOut]
+    func createEvent(_ payload: EventCreate, bearerToken: String) async throws -> EventOut
+    func startSession(eventId: String, bearerToken: String) async throws -> SessionOut
+    func submitTestResult(sessionId: String, _ payload: TestResultIn, bearerToken: String) async throws -> SessionOut
+    func getSession(sessionId: String, bearerToken: String) async throws -> SessionOut
+    func reissueInvite(contactId: String, bearerToken: String) async throws -> DDContactOut
+    func requestSMSFallback(sessionId: String, bearerToken: String) async throws -> SessionOut
+}
 
-    /// Set `BuzzBuddyAPIBaseURL` through the BUZZBUDDY_API_BASE_URL build
-    /// setting for device and production builds. Localhost is only a Debug
-    /// convenience for the iOS Simulator.
-    init(baseURL: URL? = BuzzBuddyAPI.defaultBaseURL) {
-        configuredBaseURL = baseURL
-    }
+enum APIConfiguration {
+    static let environmentKey = "BUZZBUDDY_API_BASE_URL"
+    static let infoPlistKey = "BuzzBuddyAPIBaseURL"
 
-    static var defaultBaseURL: URL? {
-        if let configured = Bundle.main.object(forInfoDictionaryKey: "BuzzBuddyAPIBaseURL") as? String {
-            let value = configured.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !value.isEmpty, !value.contains("$("), let url = URL(string: value) {
-                return url
-            }
+    static func resolveBaseURL(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        infoDictionary: [String: Any]? = Bundle.main.infoDictionary
+    ) -> Result<URL, APIError> {
+        if let value = environment[environmentKey], !value.isEmpty {
+            return validate(value)
+        }
+        if let value = infoDictionary?[infoPlistKey] as? String,
+           !value.isEmpty,
+           !value.contains("$(") {
+            return validate(value)
         }
 #if DEBUG
-        return URL(string: "http://127.0.0.1:8000")
+        return validate("http://127.0.0.1:8000")
 #else
-        return nil
+        return .failure(.invalidConfiguration(
+            "Set BUZZBUDDY_API_BASE_URL to the deployed HTTPS API URL."
+        ))
 #endif
+    }
+
+    private static func validate(_ value: String) -> Result<URL, APIError> {
+        let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https" else {
+            return .failure(.invalidConfiguration(
+                "Invalid backend URL; it must begin with http:// or https://."
+            ))
+        }
+#if !DEBUG
+        guard scheme == "https" else {
+            return .failure(.invalidConfiguration("Production BuzzBuddy API URLs must use HTTPS."))
+        }
+#endif
+        return .success(url)
+    }
+}
+
+final class BuzzBuddyAPI: BuzzBuddyAPIProtocol {
+    private let baseURLResult: Result<URL, APIError>
+
+    init(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        infoDictionary: [String: Any]? = Bundle.main.infoDictionary
+    ) {
+        baseURLResult = APIConfiguration.resolveBaseURL(
+            environment: environment,
+            infoDictionary: infoDictionary
+        )
     }
 
     private let encoder: JSONEncoder = {
@@ -51,19 +95,9 @@ final class BuzzBuddyAPI {
     }()
 
     private func requestURL(for path: String) throws -> URL {
-        guard let baseURL = configuredBaseURL else {
-            throw APIError.invalidConfiguration(
-                "Set BUZZBUDDY_API_BASE_URL to your deployed HTTPS API URL before running this build."
-            )
-        }
-
-#if !DEBUG
-        guard baseURL.scheme?.lowercased() == "https" else {
-            throw APIError.invalidConfiguration("Production BuzzBuddy API URLs must use HTTPS.")
-        }
-#endif
-
-        return baseURL.appendingPathComponent(path.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
+        try baseURLResult.get().appendingPathComponent(
+            path.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+        )
     }
 
     private func perform<Response: Decodable>(_ request: URLRequest) async throws -> Response {
@@ -120,6 +154,19 @@ final class BuzzBuddyAPI {
         try await send("/users", body: payload)
     }
 
+    func updateBaseline(
+        userId: String,
+        _ payload: BaselineUpdate,
+        bearerToken: String
+    ) async throws -> UserOut {
+        try await send(
+            "/users/\(userId)/baseline",
+            method: "PATCH",
+            body: payload,
+            bearerToken: bearerToken
+        )
+    }
+
     func getContacts(userId: String, bearerToken: String) async throws -> [DDContactOut] {
         try await send("/users/\(userId)/contacts", method: "GET", bearerToken: bearerToken)
     }
@@ -129,16 +176,18 @@ final class BuzzBuddyAPI {
     }
 
     func startSession(eventId: String, bearerToken: String) async throws -> SessionOut {
-        try await send(
-            "/events/\(eventId)/sessions", method: "POST", bearerToken: bearerToken
-        )
+        try await send("/events/\(eventId)/sessions", method: "POST", bearerToken: bearerToken)
     }
 
     func submitTestResult(
-        sessionId: String, _ payload: TestResultIn, bearerToken: String
+        sessionId: String,
+        _ payload: TestResultIn,
+        bearerToken: String
     ) async throws -> SessionOut {
         try await send(
-            "/sessions/\(sessionId)/test-results", body: payload, bearerToken: bearerToken
+            "/sessions/\(sessionId)/test-results",
+            body: payload,
+            bearerToken: bearerToken
         )
     }
 
@@ -147,9 +196,7 @@ final class BuzzBuddyAPI {
     }
 
     func reissueInvite(contactId: String, bearerToken: String) async throws -> DDContactOut {
-        try await send(
-            "/contacts/\(contactId)/invite", method: "POST", bearerToken: bearerToken
-        )
+        try await send("/contacts/\(contactId)/invite", method: "POST", bearerToken: bearerToken)
     }
 
     func requestSMSFallback(sessionId: String, bearerToken: String) async throws -> SessionOut {

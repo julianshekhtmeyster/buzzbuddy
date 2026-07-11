@@ -39,10 +39,18 @@ struct StartEventView: View {
             }
 
             Button(appState.isLoading ? "Starting..." : "Start Event") {
-                Task { await appState.startEvent(name: eventName.trimmingCharacters(in: .whitespacesAndNewlines)) }
+                Task {
+                    await appState.startEvent(
+                        name: eventName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    )
+                }
             }
             .buttonStyle(.borderedProminent)
-            .disabled(appState.isLoading || appState.selectedContactId == nil || eventName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+            .disabled(
+                appState.isLoading
+                    || appState.selectedContactId == nil
+                    || eventName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            )
 
             if let error = appState.errorMessage {
                 Text(error).foregroundStyle(.red)

@@ -26,6 +26,7 @@ from ..models import (
 from ..schemas import (
     AcceptInviteIn,
     AcknowledgeNotificationIn,
+    BaselineUpdate,
     ContactAcceptOut,
     ContactDeviceOut,
     DDContactOut,
@@ -37,6 +38,7 @@ from ..schemas import (
     TestResultIn,
     UserCreate,
     UserCreateOut,
+    UserOut,
 )
 from ..tools.handlers import reconcile_stale_notification_attempt, send_sms_fallback
 
@@ -161,7 +163,7 @@ def create_user(payload: UserCreate, db: DBSession = Depends(get_db)):
             user_id=user.id,
             reaction_time_ms=payload.baseline.reaction_time_ms,
             gyro_stability_score=payload.baseline.gyro_stability_score,
-            memory_recall_score=payload.baseline.memory_recall_score,
+            memory_recall_percent=payload.baseline.memory_recall_percent,
         )
     )
     invite_expiry = _utcnow() + datetime.timedelta(hours=settings.contact_invite_ttl_hours)
@@ -342,6 +344,45 @@ def acknowledge_notification(
     db.commit()
     db.refresh(attempt)
     return attempt
+
+
+@router.patch("/users/{user_id}/baseline", response_model=UserOut)
+def update_baseline(
+    user_id: str,
+    payload: BaselineUpdate,
+    credentials: HTTPAuthorizationCredentials | None = Depends(contact_bearer),
+    db: DBSession = Depends(get_db),
+):
+    """Updates the existing user's baseline in place -- used to backfill a
+    baseline (e.g. memory) that didn't exist when the user first onboarded.
+    Never creates a duplicate user. Only the fields present in the payload
+    are touched; anything omitted keeps its current value."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="user not found")
+    _verify_owner_access(user, credentials)
+
+    updates = payload.model_dump(exclude_none=True)
+    if not updates:
+        raise HTTPException(status_code=400, detail="no baseline fields provided")
+
+    if user.baseline is None:
+        required = {"reaction_time_ms", "gyro_stability_score", "memory_recall_percent"}
+        missing = required - updates.keys()
+        if missing:
+            raise HTTPException(
+                status_code=400,
+                detail=f"user has no baseline on file; must provide all fields, missing: {sorted(missing)}",
+            )
+        db.add(Baseline(user_id=user.id, **updates))
+    else:
+        for field, value in updates.items():
+            setattr(user.baseline, field, value)
+        db.add(user.baseline)
+
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.post("/events", response_model=EventOut)

@@ -3,38 +3,144 @@ import SwiftUI
 /// The full BuzzBuddy safety-check flow: baseline setup, starting an event,
 /// taking whichever test the AI examiner requests, and the final verdict.
 struct SafetyCheckFlowView: View {
-    @EnvironmentObject private var appState: AppState
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Group {
-            switch appState.phase {
-            case .onboarding:
-                OnboardingView()
-            case .readyToStartEvent:
-                StartEventView()
-            case .takingTest(let pendingTest):
-                VStack(spacing: 8) {
-                    Text("AI requested: \(pendingTest) test")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    if pendingTest == "gyro" || pendingTest == "balance" {
-                        GyroBalanceTestView { score in
-                            Task { await appState.submitTestResult(testType: pendingTest, rawValue: score) }
-                        }
-                    } else if pendingTest == "memory" {
-                        MemoryRecallTestView { accuracy in
-                            Task { await appState.submitTestResult(testType: "memory", rawValue: accuracy) }
-                        }
-                    } else {
-                        ReactionTestView { ms in
-                            Task { await appState.submitTestResult(testType: "reaction", rawValue: ms) }
-                        }
-                    }
+        switch appState.phase {
+        case .onboarding:
+            OnboardingView()
+        case .baselineUpgrade:
+            BaselineUpgradeView()
+        case .restoring:
+            ProgressView("Restoring your check-in...")
+        case .restoreFailed:
+            RestoreFailedView()
+        case .readyToStartEvent:
+            StartEventView()
+        case .startingEvent:
+            ProgressView("Starting your check-in...")
+        case .takingTest(let pendingTest):
+            TestPromptView(pendingTest: pendingTest)
+        case .reviewingTest(let pendingTest):
+            VStack(spacing: 12) {
+                Text("AI requested: \(pendingTest) test")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                ProgressView("Reviewing your result...")
+            }
+        case .submissionFailed(let pendingTest, _, _):
+            SubmissionFailedView(pendingTest: pendingTest)
+        case .unsupportedTest(let pendingTest):
+            UnsupportedTestView(pendingTest: pendingTest)
+        case .verdict:
+            VerdictView()
+        }
+    }
+}
+
+private struct TestPromptView: View {
+    @EnvironmentObject var appState: AppState
+    let pendingTest: String
+
+    var body: some View {
+        VStack(spacing: 8) {
+            Text("AI requested: \(pendingTest) test")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            switch TestKind(pendingTest: pendingTest) {
+            case .reaction:
+                ReactionTestView { ms in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: ms) }
                 }
-            case .verdict:
-                VerdictView()
+            case .balance:
+                GyroBalanceTestView { variance in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: variance) }
+                }
+            case .memory:
+                MemoryRecallTestView { accuracy in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: accuracy) }
+                }
+            case .unknown:
+                UnsupportedTestView(pendingTest: pendingTest)
             }
         }
+    }
+}
+
+private struct UnsupportedTestView: View {
+    let pendingTest: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.orange)
+            Text("The examiner requested a test type this app version doesn't support (\"\(pendingTest)\").")
+                .multilineTextAlignment(.center)
+            Text("Update the app, or contact support if this keeps happening.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .padding()
+    }
+}
+
+private struct SubmissionFailedView: View {
+    @EnvironmentObject var appState: AppState
+    let pendingTest: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("AI requested: \(pendingTest) test")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Image(systemName: "wifi.exclamationmark")
+                .font(.largeTitle)
+                .foregroundStyle(.red)
+            if let error = appState.errorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
+            Button("Retry") {
+                Task { await appState.retrySubmission() }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(appState.isLoading)
+        }
+        .padding()
+    }
+}
+
+private struct RestoreFailedView: View {
+    @EnvironmentObject var appState: AppState
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle")
+                .font(.largeTitle)
+                .foregroundStyle(.orange)
+            Text("Couldn't restore your active check-in.")
+                .multilineTextAlignment(.center)
+            if let error = appState.errorMessage {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+            }
+            Button("Retry") {
+                Task { await appState.retryRestore() }
+            }
+            .buttonStyle(.borderedProminent)
+            .disabled(appState.isLoading)
+
+            Button("Start a new check-in", role: .destructive) {
+                appState.discardSession()
+            }
+        }
+        .padding()
     }
 }
 

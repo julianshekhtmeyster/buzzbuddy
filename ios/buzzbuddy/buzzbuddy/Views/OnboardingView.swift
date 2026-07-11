@@ -5,7 +5,8 @@ struct OnboardingView: View {
 
     @State private var name = ""
     @State private var weightLbs = ""
-    @State private var heightIn = ""
+    @State private var heightFeet = ""
+    @State private var heightInches = ""
     @State private var ddName = ""
     @State private var ddPhone = ""
     @State private var showContactPicker = false
@@ -14,7 +15,7 @@ struct OnboardingView: View {
     @State private var showGyroBaselineTest = false
     @State private var gyroBaselineScore: Double?
     @State private var showMemoryBaselineTest = false
-    @State private var memoryBaselineScore: Double?
+    @State private var memoryBaselinePercent: Double?
 
     var body: some View {
         Form {
@@ -22,8 +23,12 @@ struct OnboardingView: View {
                 TextField("Name", text: $name)
                 TextField("Weight (lbs)", text: $weightLbs)
                     .keyboardType(.decimalPad)
-                TextField("Height (in)", text: $heightIn)
-                    .keyboardType(.decimalPad)
+                HStack {
+                    TextField("Height (ft)", text: $heightFeet)
+                        .keyboardType(.numberPad)
+                    TextField("Height (in)", text: $heightInches)
+                        .keyboardType(.numberPad)
+                }
             }
 
             Section("Designated driver") {
@@ -52,13 +57,13 @@ struct OnboardingView: View {
                 }
 
                 if let score = gyroBaselineScore {
-                    Text("Balance baseline variance: \(String(format: "%.4f", score))")
+                    Text("Balance baseline: \(String(format: "%.2f", score))")
                 } else {
                     Button("Run balance baseline test") { showGyroBaselineTest = true }
                 }
 
-                if let score = memoryBaselineScore {
-                    Text("Memory baseline: \(Int(score.rounded()))%")
+                if let score = memoryBaselinePercent {
+                    Text("Memory baseline: \(Int(score))% accurate")
                 } else {
                     Button("Run memory baseline test") { showMemoryBaselineTest = true }
                 }
@@ -68,7 +73,7 @@ struct OnboardingView: View {
                 Text(error).foregroundStyle(.red)
             }
 
-            Button(appState.isLoading ? "Saving..." : "Start my night") {
+            Button(appState.isLoading ? "Saving..." : "Finish setup") {
                 submit()
             }
             .disabled(!canSubmit || appState.isLoading)
@@ -86,8 +91,8 @@ struct OnboardingView: View {
             }
         }
         .sheet(isPresented: $showMemoryBaselineTest) {
-            MemoryRecallTestView { score in
-                memoryBaselineScore = score
+            MemoryBaselineTestView { percent in
+                memoryBaselinePercent = percent
                 showMemoryBaselineTest = false
             }
         }
@@ -105,34 +110,40 @@ struct OnboardingView: View {
     private var canSubmit: Bool {
         reactionBaselineMs != nil
             && gyroBaselineScore != nil
-            && memoryBaselineScore != nil
-            && !name.isEmpty
-            && Double(weightLbs) != nil
-            && Double(heightIn) != nil
-            && !ddName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && memoryBaselinePercent != nil
+            && OnboardingValidation.isNonEmpty(name)
+            && OnboardingValidation.isValidWeightLbs(weightLbs)
+            && OnboardingValidation.isValidHeight(feet: heightFeet, inches: heightInches)
+            && OnboardingValidation.isNonEmpty(ddName)
             && PhoneNumberNormalizer.isValid(ddPhone)
     }
 
     private func submit() {
         guard let ms = reactionBaselineMs,
               let gyroScore = gyroBaselineScore,
-              let memoryScore = memoryBaselineScore,
-              let weightLbs = Double(weightLbs),
-              let heightIn = Double(heightIn) else { return }
+              let memoryScore = memoryBaselinePercent,
+              OnboardingValidation.isValidWeightLbs(weightLbs),
+              OnboardingValidation.isValidHeight(feet: heightFeet, inches: heightInches),
+              let weightLbsValue = Double(weightLbs),
+              let heightInValue = OnboardingValidation.totalHeightInches(
+                  feet: heightFeet,
+                  inches: heightInches
+              )
+        else { return }
 
-        let weightKg = weightLbs * 0.453592
-        let heightCm = heightIn * 2.54
+        let weightKg = weightLbsValue * 0.453592
+        let heightCm = heightInValue * 2.54
         let bmi = weightKg / pow(heightCm / 100, 2)
 
         Task {
             await appState.completeOnboarding(
-                name: name,
+                name: name.trimmingCharacters(in: .whitespacesAndNewlines),
                 weightKg: weightKg,
                 heightCm: heightCm,
                 bmi: bmi,
                 reactionBaselineMs: ms,
                 gyroBaselineScore: gyroScore,
-                memoryBaselineScore: memoryScore,
+                memoryBaselinePercent: memoryScore,
                 ddName: ddName.trimmingCharacters(in: .whitespacesAndNewlines),
                 ddPhone: PhoneNumberNormalizer.normalized(ddPhone)
             )
