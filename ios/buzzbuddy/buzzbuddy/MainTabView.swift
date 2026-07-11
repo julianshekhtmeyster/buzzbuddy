@@ -36,7 +36,7 @@ struct MainTabView: View {
         case events, contacts, quiz, baseline, settings
     }
 
-    @State private var selectedTab: Tab = .events
+    @State private var selectedTab: Tab = .quiz
     @State private var tabBarHeight: CGFloat = 0
 
     var body: some View {

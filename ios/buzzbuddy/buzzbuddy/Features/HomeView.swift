@@ -30,7 +30,6 @@ struct HomeView: View {
 
                 if (engine.finished){
                     showingTest = false
-                    print("yahdsgrefh")
                 }
             }
             

@@ -30,9 +30,9 @@ struct GameLibrary {
         ),
 
         Game(
-            name: "Balance",
+            name: "GoNoGo",
             view: AnyView(
-                BalanceGame()
+                GoNoGoGame()
             )
         ),
         Game(
@@ -74,11 +74,12 @@ class TestEngine: ObservableObject {
     }
     
 
-    func nextGame() {
+    func completeGame(gameType:String, gameScore:Int) {
 
         currentIndex += 1
-        print(currentIndex)
-        print(selectedGames.count )
+        print(currentIndex )
+        print(gameType)
+        print(gameScore)
 
     }
 
@@ -88,6 +89,7 @@ class TestEngine: ObservableObject {
         currentIndex >= selectedGames.count        
 
     }
+    
     
 
 
