@@ -71,9 +71,9 @@ struct TestFormView: View {
     
     
     func submitForm() {
-        
+
         // Save form data here later
-        
-        engine.currentIndex = 100000
+
+        engine.finishForm()
     }
 }

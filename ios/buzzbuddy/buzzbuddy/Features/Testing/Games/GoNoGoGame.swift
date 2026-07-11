@@ -28,7 +28,7 @@ struct GoNoGoGame: View {
     
     @State private var startTime = Date()
     
-    let totalRounds = 10
+    let totalRounds = 2
     
     
     var body: some View {
@@ -114,7 +114,7 @@ struct GoNoGoGame: View {
         instructionColor = .gray
         
         
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
             
             activeTarget = Bool.random() ? .green : .red
             

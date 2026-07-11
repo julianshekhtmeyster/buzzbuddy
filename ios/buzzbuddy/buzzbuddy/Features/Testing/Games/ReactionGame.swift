@@ -22,7 +22,7 @@ struct ReactionGame: View {
     @State private var round = 0
     @State private var reactionTimes: [Int] = []
     
-    let totalRounds = 3
+    let totalRounds = 4
     
     
     var body: some View {

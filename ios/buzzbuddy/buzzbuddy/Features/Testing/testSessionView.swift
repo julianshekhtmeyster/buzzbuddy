@@ -103,6 +103,7 @@ struct TestSessionView: View {
     
     
     func exitTest() {
+        engine.finishForm()
         engine.currentIndex = 100000
         showDisclaimer = true
         showForm = false
