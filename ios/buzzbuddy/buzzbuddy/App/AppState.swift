@@ -157,6 +157,7 @@ final class AppState: ObservableObject {
             }
             baselineErrorMessage = nil
         } catch {
+            if resetIfBackendForgotUs(error) { return }
             baselineErrorMessage = error.localizedDescription
         }
     }
@@ -177,6 +178,7 @@ final class AppState: ObservableObject {
             errorMessage = nil
             advance(from: session)
         } catch {
+            if resetIfBackendForgotUs(error) { return }
             errorMessage = error.localizedDescription
             phase = .readyToStartEvent
         }
@@ -219,6 +221,7 @@ final class AppState: ObservableObject {
             // the user to tap Continue (see continueAfterReview()) instead of
             // auto-advancing out from under them.
         } catch {
+            if resetIfBackendForgotUs(error) { return }
             errorMessage = error.localizedDescription
             phase = .submissionFailed(pendingTest: pendingTest, testType: testType, rawValue: rawValue)
         }
@@ -247,6 +250,39 @@ final class AppState: ObservableObject {
         phase = .readyToStartEvent
     }
 
+    /// If `error` is a 404 for a cached ID (user/event/session), the backend
+    /// no longer knows about an identity we have saved locally -- most often
+    /// because its database got reset (e.g. a redeploy with no persistent
+    /// storage) after this device already onboarded. There's no way to
+    /// recover the old identity, so wipe everything local and drop back to
+    /// onboarding instead of leaving the user stuck on a raw error. Returns
+    /// whether it recognized and handled the error.
+    @discardableResult
+    private func resetIfBackendForgotUs(_ error: Error) -> Bool {
+        guard let apiError = error as? APIError, apiError.isNotFound else { return false }
+
+        persistence.userId = nil
+        persistence.eventId = nil
+        persistence.sessionId = nil
+        persistence.hasCompletedOnboarding = false
+        persistence.reactionBaselineMs = nil
+        persistence.gyroBaselineScore = nil
+        persistence.memoryBaselinePercent = nil
+        persistence.gaitBaselineScore = nil
+
+        userId = nil
+        eventId = nil
+        session = nil
+        reactionBaselineMs = nil
+        gyroBaselineScore = nil
+        memoryBaselinePercent = nil
+        gaitBaselineScore = nil
+
+        errorMessage = "Your profile couldn't be found on the server and needs to be set up again."
+        phase = .onboarding
+        return true
+    }
+
     private func restoreSession(sessionId: String) async {
         isLoading = true
         defer { isLoading = false }
@@ -256,6 +292,7 @@ final class AppState: ObservableObject {
             errorMessage = nil
             advance(from: session)
         } catch {
+            if resetIfBackendForgotUs(error) { return }
             errorMessage = error.localizedDescription
             phase = .restoreFailed(sessionId: sessionId)
         }

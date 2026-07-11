@@ -2,15 +2,25 @@ import Foundation
 
 enum APIError: LocalizedError {
     case invalidResponse
-    case server(String)
+    case server(status: Int, message: String)
     case configuration(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse: return "Invalid response from server"
-        case .server(let message): return message
+        case .server(_, let message): return message
         case .configuration(let message): return message
         }
+    }
+
+    /// True for any "this ID doesn't exist on the server" response --
+    /// user/event/session all 404 the same way. A backend whose database
+    /// got reset out from under an already-onboarded client (e.g. a
+    /// redeploy with no persistent storage) surfaces here, since every ID
+    /// that client has cached locally stops existing at once.
+    var isNotFound: Bool {
+        if case .server(404, _) = self { return true }
+        return false
     }
 }
 
@@ -94,7 +104,7 @@ final class BuzzBuddyAPI: BuzzBuddyAPIProtocol {
         guard let http = response as? HTTPURLResponse else { throw APIError.invalidResponse }
         guard (200..<300).contains(http.statusCode) else {
             let message = String(data: data, encoding: .utf8) ?? "HTTP \(http.statusCode)"
-            throw APIError.server(message)
+            throw APIError.server(status: http.statusCode, message: message)
         }
         return try decoder.decode(Response.self, from: data)
     }
