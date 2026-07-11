@@ -48,7 +48,7 @@ struct MainTabView: View {
                 case .contacts:
                     ContactsView()
                 case .quiz:
-                    QuizView()
+                    HomeView()
                 case .baseline:
                     BaselineView()
                 case .settings:
@@ -190,17 +190,6 @@ private struct MiddleTabButton: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - AI examiner check-in tab
-
-private struct QuizView: View {
-    var body: some View {
-        NavigationStack {
-            SafetyCheckFlowView()
-                .navigationTitle("Check-In")
-        }
     }
 }
 
