@@ -8,17 +8,17 @@
 import SwiftUI
 
 struct MemoryGame: View {
+    
+    @EnvironmentObject var engine:TestEngine
+
     var body: some View {
         NavigationStack {
             
-            
-            Text("game")
-                .font(.largeTitle)
-                .navigationTitle("gahh")
+            Text("Memory")
+            Button("Next Game"){
+                engine.nextGame()
+            }
         }
     }
 }
 
-#Preview {
-    MemoryGame()
-}

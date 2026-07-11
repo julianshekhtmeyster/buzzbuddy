@@ -8,17 +8,20 @@
 import SwiftUI
 
 struct ReactionGame: View {
+    
+    @EnvironmentObject var engine:TestEngine
+
+    
     var body: some View {
         NavigationStack {
             
-            
-            Text("game")
-                .font(.largeTitle)
-                .navigationTitle("gahh")
+            Text("Reaction")
+            Button("Next Game"){
+                engine.nextGame()
+
+            }
         }
     }
 }
 
-#Preview {
-    ReactionGame()
-}
+

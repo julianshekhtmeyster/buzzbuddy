@@ -8,6 +8,8 @@
 import SwiftUI
 
 // MARK: - Tab bar height plumbing
+struct MainTabView: View {
+    
 
 private struct TabBarHeightPreferenceKey: PreferenceKey {
     static var defaultValue: CGFloat = 0
@@ -53,6 +55,13 @@ struct MainTabView: View {
                     BaselineView()
                 case .settings:
                     SettingsView()
+    
+
+        TabView {
+
+            HomeView()
+                .tabItem {
+                    Label("Home", systemImage: "house.fill")
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -74,7 +83,7 @@ struct MainTabView: View {
 
 // MARK: - Custom Tab Bar
 
-private struct CustomTabBar: View {
+struct CustomTabBar: View {
     @Binding var selectedTab: MainTabView.Tab
 
     /// Total height of the bar's content row (excludes safe area inset).
@@ -132,7 +141,7 @@ private struct CustomTabBar: View {
 
 // MARK: - Standard Tab Button
 
-private struct TabBarButton: View {
+struct TabBarButton: View {
     let icon: String
     let title: String
     let isSelected: Bool
@@ -155,7 +164,7 @@ private struct TabBarButton: View {
 
 // MARK: - Prominent Middle Tab Button
 
-private struct MiddleTabButton: View {
+ struct MiddleTabButton: View {
     let icon: String
     let isSelected: Bool
     /// Height of the tab bar's content row. The circle and icon are sized
@@ -192,13 +201,13 @@ private struct MiddleTabButton: View {
 
 // MARK: - Placeholder views (replace with your real ones)
 
-private struct QuizView: View {
+ struct QuizView: View {
     var body: some View {
         Text("Quiz / Checklist")
     }
 }
 
-private struct BaselineView: View {
+ struct BaselineView: View {
     var body: some View {
         Text("Baseline")
     }

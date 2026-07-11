@@ -51,6 +51,7 @@ class TestEngine: ObservableObject {
     @Published var selectedGames: [Game] = []
 
     @Published var currentIndex = 0
+
     
     var currentGame: Game? {
 
@@ -71,7 +72,7 @@ class TestEngine: ObservableObject {
 
         currentIndex = 0
     }
-
+    
 
     func nextGame() {
 
@@ -82,7 +83,7 @@ class TestEngine: ObservableObject {
 
     var finished: Bool {
 
-        currentIndex >= selectedGames.count
+        currentIndex >= selectedGames.count        
 
     }
     
@@ -95,8 +96,14 @@ class TestEngine: ObservableObject {
 @main
 struct BuzzBuddyApp: App {
     var body: some Scene {
+
+        @StateObject var engine = TestEngine()
+
         WindowGroup {
+        
             ContentView()
+                .environmentObject(engine)
+            
         }
     }
 }

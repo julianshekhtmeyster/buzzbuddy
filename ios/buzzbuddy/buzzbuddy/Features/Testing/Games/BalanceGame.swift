@@ -8,17 +8,19 @@
 import SwiftUI
 
 struct BalanceGame: View {
+    
+    @EnvironmentObject var engine:TestEngine
+
+    
     var body: some View {
         NavigationStack {
             
-            
-            Text("game")
-                .font(.largeTitle)
-                .navigationTitle("gahh")
+            Text("Balance")
+            Button("Next Game"){
+                engine.nextGame()
+
+            }
         }
     }
 }
 
-#Preview {
-    BalanceGame()
-}
