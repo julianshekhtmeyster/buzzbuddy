@@ -10,8 +10,7 @@ import SwiftUI
 struct RideView: View {
     var body: some View {
         NavigationStack {
-            Text("Ride Home")
-                .font(.largeTitle)
+            SafetyCheckFlowView()
                 .navigationTitle("Ride Home")
         }
     }
