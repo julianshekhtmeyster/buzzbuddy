@@ -68,7 +68,7 @@ struct MainTabView: View {
         }
         .onPreferenceChange(TabBarHeightPreferenceKey.self) { height in
             tabBarHeight = height
-        }
+        }.ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
