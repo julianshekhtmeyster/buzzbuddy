@@ -80,14 +80,28 @@ def request_test(db: DBSession, session: AgentSession, args: dict) -> dict:
     return {"acknowledged": True, "requested_test": args["test_type"], "reason": args.get("reason")}
 
 
+# Twilio error 572006: "Invalid template name. Trial accounts can only use
+# predefined SMS templates." Trial (unpaid) accounts can't send arbitrary
+# text -- only these canned templates. Closest fit to a DD alert we have.
+_TWILIO_TRIAL_TEMPLATE_ERROR = 572006
+_TWILIO_TRIAL_FALLBACK_BODY = "sms_customer_support"
+
+
 def notify_contact(db: DBSession, session: AgentSession, args: dict) -> dict:
     contacts = session.event.user.dd_contacts
     message = args["message"]
 
     twilio_configured = bool(
-        settings.twilio_account_sid and settings.twilio_auth_token and settings.twilio_from_number
+        settings.twilio_account_sid
+        and settings.twilio_api_key_sid
+        and settings.twilio_api_key_secret
+        and settings.twilio_from_number
     )
-    client = Client(settings.twilio_account_sid, settings.twilio_auth_token) if twilio_configured else None
+    client = (
+        Client(settings.twilio_api_key_sid, settings.twilio_api_key_secret, settings.twilio_account_sid)
+        if twilio_configured
+        else None
+    )
 
     results = []
     for contact in contacts:
@@ -102,7 +116,24 @@ def notify_contact(db: DBSession, session: AgentSession, args: dict) -> dict:
             client.messages.create(to=contact.phone_number, from_=settings.twilio_from_number, body=message)
             results.append({"contact": contact.name, "sent": True})
         except TwilioRestException as e:
-            results.append({"contact": contact.name, "sent": False, "reason": str(e)})
+            if e.code == _TWILIO_TRIAL_TEMPLATE_ERROR:
+                try:
+                    client.messages.create(
+                        to=contact.phone_number,
+                        from_=settings.twilio_from_number,
+                        body=_TWILIO_TRIAL_FALLBACK_BODY,
+                    )
+                    results.append(
+                        {
+                            "contact": contact.name,
+                            "sent": True,
+                            "reason": "Twilio trial account: sent generic template, not the custom message",
+                        }
+                    )
+                except TwilioRestException as e2:
+                    results.append({"contact": contact.name, "sent": False, "reason": str(e2)})
+            else:
+                results.append({"contact": contact.name, "sent": False, "reason": str(e)})
 
     session.notified = True
     db.add(session)

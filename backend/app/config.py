@@ -11,7 +11,8 @@ class Settings(BaseSettings):
     do_base_url: str = "https://inference.do-ai.run/v1/"
 
     twilio_account_sid: str = ""
-    twilio_auth_token: str = ""
+    twilio_api_key_sid: str = ""
+    twilio_api_key_secret: str = ""
     twilio_from_number: str = ""
 
 
