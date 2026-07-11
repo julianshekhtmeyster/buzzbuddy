@@ -21,6 +21,7 @@ def retrieve_baseline(db: DBSession, session: AgentSession, args: dict) -> dict:
         "reaction_time_ms": baseline.reaction_time_ms,
         "gyro_stability_score": baseline.gyro_stability_score,
         "memory_recall_percent": baseline.memory_recall_percent,
+        "gait_stability_score": baseline.gait_stability_score,
         "weight_kg": user.weight_kg,
         "height_cm": user.height_cm,
         "bmi": user.bmi,
@@ -32,6 +33,7 @@ _BASELINE_FIELD_BY_TEST = {
     "gyro": "gyro_stability_score",
     "balance": "gyro_stability_score",
     "memory": "memory_recall_percent",
+    "gait": "gait_stability_score",
 }
 
 
@@ -51,6 +53,8 @@ def analyze_deviation(db: DBSession, session: AgentSession, args: dict) -> dict:
         return {"error": f"no '{test_type}' result submitted yet this session"}
 
     baseline_value = getattr(baseline, _BASELINE_FIELD_BY_TEST[test_type])
+    if baseline_value is None:
+        return {"error": f"no '{test_type}' baseline captured for this user"}
     current_value = latest.raw_value
     percent_change = ((current_value - baseline_value) / baseline_value) * 100 if baseline_value else 0.0
 

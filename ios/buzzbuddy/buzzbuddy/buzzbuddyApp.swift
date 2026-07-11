@@ -58,11 +58,6 @@ struct GameLibrary {
             view: AnyView(
                 MemoryGame()
             )
-        ),
-        Game(name: "Gait",
-             view: AnyView(
-                GaitTestView()
-             )
         )
 
     ]

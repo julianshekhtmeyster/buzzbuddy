@@ -7,6 +7,7 @@ enum TestKind: Equatable {
     case reaction
     case balance
     case memory
+    case gait
     case unknown
 
     init(pendingTest: String) {
@@ -14,6 +15,7 @@ enum TestKind: Equatable {
         case "reaction": self = .reaction
         case "gyro", "balance": self = .balance
         case "memory": self = .memory
+        case "gait": self = .gait
         default: self = .unknown
         }
     }
@@ -46,6 +48,7 @@ final class AppState: ObservableObject {
     @Published private(set) var reactionBaselineMs: Double?
     @Published private(set) var gyroBaselineScore: Double?
     @Published private(set) var memoryBaselinePercent: Double?
+    @Published private(set) var gaitBaselineScore: Double?
 
     private let api: BuzzBuddyAPIProtocol
     private let persistence: PersistenceStore
@@ -66,6 +69,7 @@ final class AppState: ObservableObject {
         self.reactionBaselineMs = persistence.reactionBaselineMs
         self.gyroBaselineScore = persistence.gyroBaselineScore
         self.memoryBaselinePercent = persistence.memoryBaselinePercent
+        self.gaitBaselineScore = persistence.gaitBaselineScore
 
         if !persistence.hasCompletedOnboarding {
             self.phase = .onboarding
@@ -120,7 +124,8 @@ final class AppState: ObservableObject {
     func updateBaseline(
         reactionBaselineMs: Double? = nil,
         gyroBaselineScore: Double? = nil,
-        memoryBaselinePercent: Double? = nil
+        memoryBaselinePercent: Double? = nil,
+        gaitBaselineScore: Double? = nil
     ) async {
         guard let userId else { return }
         guard !isLoading else { return }
@@ -130,7 +135,8 @@ final class AppState: ObservableObject {
             let payload = BaselineUpdate(
                 reactionTimeMs: reactionBaselineMs,
                 gyroStabilityScore: gyroBaselineScore,
-                memoryRecallPercent: memoryBaselinePercent
+                memoryRecallPercent: memoryBaselinePercent,
+                gaitStabilityScore: gaitBaselineScore
             )
             _ = try await api.updateBaseline(userId: userId, payload)
             if let reactionBaselineMs {
@@ -144,6 +150,10 @@ final class AppState: ObservableObject {
             if let memoryBaselinePercent {
                 persistence.memoryBaselinePercent = memoryBaselinePercent
                 self.memoryBaselinePercent = memoryBaselinePercent
+            }
+            if let gaitBaselineScore {
+                persistence.gaitBaselineScore = gaitBaselineScore
+                self.gaitBaselineScore = gaitBaselineScore
             }
             baselineErrorMessage = nil
         } catch {
@@ -201,9 +211,16 @@ final class AppState: ObservableObject {
                     longitude: coordinate?.longitude
                 )
             )
+            let gainedReasoning = updated.reasoningLog.count > session.reasoningLog.count
             self.session = updated
             persistence.sessionId = updated.id
             errorMessage = nil
+            if gainedReasoning {
+                // Hold on .reviewingTest briefly so its AI-reasoning dropdown
+                // can reveal the newly arrived line(s) before the phase
+                // advances out from under it.
+                try? await Task.sleep(nanoseconds: 900_000_000)
+            }
             advance(from: updated)
         } catch {
             errorMessage = error.localizedDescription

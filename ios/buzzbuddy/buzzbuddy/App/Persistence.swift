@@ -11,6 +11,7 @@ protocol PersistenceStore: AnyObject {
     var reactionBaselineMs: Double? { get set }
     var gyroBaselineScore: Double? { get set }
     var memoryBaselinePercent: Double? { get set }
+    var gaitBaselineScore: Double? { get set }
 }
 
 final class UserDefaultsPersistenceStore: PersistenceStore {
@@ -22,6 +23,7 @@ final class UserDefaultsPersistenceStore: PersistenceStore {
         static let reactionBaselineMs = "buzzbuddy.reactionBaselineMs"
         static let gyroBaselineScore = "buzzbuddy.gyroBaselineScore"
         static let memoryBaselinePercent = "buzzbuddy.memoryBaselineScore"
+        static let gaitBaselineScore = "buzzbuddy.gaitBaselineScore"
     }
 
     private let defaults: UserDefaults
@@ -63,5 +65,10 @@ final class UserDefaultsPersistenceStore: PersistenceStore {
     var memoryBaselinePercent: Double? {
         get { defaults.object(forKey: Key.memoryBaselinePercent) as? Double }
         set { defaults.set(newValue, forKey: Key.memoryBaselinePercent) }
+    }
+
+    var gaitBaselineScore: Double? {
+        get { defaults.object(forKey: Key.gaitBaselineScore) as? Double }
+        set { defaults.set(newValue, forKey: Key.gaitBaselineScore) }
     }
 }

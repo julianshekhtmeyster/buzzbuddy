@@ -17,6 +17,7 @@ struct BaselineView: View {
     @State private var showReactionBaselineTest = false
     @State private var showGyroBaselineTest = false
     @State private var showMemoryBaselineTest = false
+    @State private var showGaitBaselineTest = false
 
     // Locally captured values not yet confirmed to exist server-side --
     // only used during first-ever capture, when the backend requires all
@@ -37,6 +38,7 @@ struct BaselineView: View {
     private var displayedReactionMs: Double? { appState.reactionBaselineMs ?? pendingReactionMs }
     private var displayedGyroScore: Double? { appState.gyroBaselineScore ?? pendingGyroScore }
     private var displayedMemoryPercent: Double? { appState.memoryBaselinePercent ?? pendingMemoryPercent }
+    private var displayedGaitScore: Double? { appState.gaitBaselineScore }
 
     var body: some View {
         NavigationStack {
@@ -77,6 +79,18 @@ struct BaselineView: View {
                     .disabled(appState.isLoading)
                 }
 
+                Section("Walking") {
+                    if let score = displayedGaitScore {
+                        Text(String(format: "%.2f", score))
+                    } else {
+                        Text("Not set").foregroundStyle(.secondary)
+                    }
+                    Button(displayedGaitScore == nil ? "Run test" : "Retest") {
+                        showGaitBaselineTest = true
+                    }
+                    .disabled(appState.isLoading)
+                }
+
                 if !hasServerBaseline
                     && (pendingReactionMs != nil || pendingGyroScore != nil || pendingMemoryPercent != nil) {
                     Text("All three are needed before your baseline is saved.")
@@ -106,6 +120,12 @@ struct BaselineView: View {
             MemoryBaselineTestView { percent in
                 showMemoryBaselineTest = false
                 capture(memoryPercent: percent)
+            }
+        }
+        .sheet(isPresented: $showGaitBaselineTest) {
+            GaitTestView { score in
+                showGaitBaselineTest = false
+                Task { await appState.updateBaseline(gaitBaselineScore: score) }
             }
         }
     }

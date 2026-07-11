@@ -24,6 +24,7 @@ struct BaselineUpdate: Codable {
     var reactionTimeMs: Double?
     var gyroStabilityScore: Double?
     var memoryRecallPercent: Double?
+    var gaitStabilityScore: Double?
 }
 
 struct UserCreate: Codable {

@@ -27,16 +27,21 @@ class MotionRecorder: ObservableObject {
     
     
     var duration: Double {
-        
+
         guard let startTime else {
             return 0
         }
-        
+
         return Date().timeIntervalSince(startTime)
     }
-    
-    
-    
+
+
+    var isAvailable: Bool {
+        manager.isDeviceMotionAvailable
+    }
+
+
+
     func startRecording() {
         
         

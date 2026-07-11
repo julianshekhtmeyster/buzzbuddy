@@ -30,7 +30,7 @@ TOOLS = [
                 "properties": {
                     "test_type": {
                         "type": "string",
-                        "enum": ["reaction", "gyro", "memory", "balance"],
+                        "enum": ["reaction", "gyro", "memory", "balance", "gait"],
                     }
                 },
                 "required": ["test_type"],
@@ -85,7 +85,7 @@ TOOLS = [
                 "properties": {
                     "test_type": {
                         "type": "string",
-                        "enum": ["reaction", "gyro", "memory", "balance"],
+                        "enum": ["reaction", "gyro", "memory", "balance", "gait"],
                     },
                     "reason": {"type": "string"},
                 },

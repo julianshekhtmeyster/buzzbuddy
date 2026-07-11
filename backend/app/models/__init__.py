@@ -47,6 +47,10 @@ class Baseline(Base):
     user_id = Column(String, ForeignKey("users.id"), unique=True, nullable=False)
     reaction_time_ms = Column(Float, nullable=False)
     gyro_stability_score = Column(Float, nullable=False)
+    # Nullable, unlike the three fields above: gait was added after those
+    # became required, so existing users can be missing it. Captured
+    # independently from the Baseline tab, not part of onboarding.
+    gait_stability_score = Column(Float, nullable=True)
     # Python attribute renamed to `memory_recall_percent` -- the value is a
     # 0-100 percentage, not a 0-1 proportion. The SQL column name is kept as
     # `memory_recall_score` to avoid an Alembic migration. Rows created
@@ -104,7 +108,7 @@ class TestResult(Base):
 
     id = Column(String, primary_key=True, default=gen_uuid)
     session_id = Column(String, ForeignKey("agent_sessions.id"), nullable=False)
-    test_type = Column(String, nullable=False)  # reaction | gyro | memory | balance
+    test_type = Column(String, nullable=False)  # reaction | gyro | memory | balance | gait
     raw_value = Column(Float, nullable=False)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 

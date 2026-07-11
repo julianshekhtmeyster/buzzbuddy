@@ -23,12 +23,7 @@ struct SafetyCheckFlowView: View {
         case .takingTest(let pendingTest):
             TestPromptView(pendingTest: pendingTest)
         case .reviewingTest(let pendingTest):
-            VStack(spacing: 12) {
-                Text("AI requested: \(pendingTest) test")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                ProgressView("Reviewing your result...")
-            }
+            ReviewingTestView(pendingTest: pendingTest)
         case .submissionFailed(let pendingTest, _, _):
             SubmissionFailedView(pendingTest: pendingTest)
         case .unsupportedTest(let pendingTest):
@@ -65,10 +60,88 @@ private struct TestPromptView: View {
                 MemoryGame { accuracy in
                     Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(accuracy)) }
                 }
+            case .gait:
+                GaitTestView { score in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: score) }
+                }
             case .unknown:
                 UnsupportedTestView(pendingTest: pendingTest)
             }
         }
+    }
+}
+
+/// Shown while `submitTestResult` is in flight. AppState briefly holds this
+/// phase after a fresh reasoning line arrives (see AppState.performSubmit)
+/// so the dropdown below has time to flip from placeholder to real content
+/// before the phase advances out from under it.
+private struct ReviewingTestView: View {
+    @EnvironmentObject var appState: AppState
+    let pendingTest: String
+    @State private var isExpanded = false
+    @State private var baselineReasoningCount = 0
+
+    private var newReasoningLines: [String] {
+        guard let log = appState.session?.reasoningLog, log.count > baselineReasoningCount else { return [] }
+        return Array(log.suffix(log.count - baselineReasoningCount))
+    }
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("AI requested: \(pendingTest) test")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            ProgressView("Reviewing your result...")
+
+            AIReasoningDropdown(lines: newReasoningLines, isExpanded: $isExpanded)
+        }
+        .padding()
+        .onAppear {
+            baselineReasoningCount = appState.session?.reasoningLog.count ?? 0
+        }
+    }
+}
+
+/// Collapsed by default; tapping reveals `lines`, or a placeholder while
+/// the AI is still working (i.e. `lines` is still empty).
+private struct AIReasoningDropdown: View {
+    let lines: [String]
+    @Binding var isExpanded: Bool
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Button {
+                withAnimation { isExpanded.toggle() }
+            } label: {
+                HStack {
+                    Image(systemName: "brain")
+                    Text("AI reasoning")
+                    Spacer()
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                }
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+
+            if isExpanded {
+                if lines.isEmpty {
+                    Text("Analyzing your result…")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    VStack(alignment: .leading, spacing: 6) {
+                        ForEach(lines, id: \.self) { line in
+                            Text("• \(line)").font(.footnote)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
+        .padding(.horizontal)
     }
 }
 

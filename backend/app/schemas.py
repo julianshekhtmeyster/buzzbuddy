@@ -24,6 +24,7 @@ class BaselineUpdate(BaseModel):
     reaction_time_ms: Optional[float] = None
     gyro_stability_score: Optional[float] = None
     memory_recall_percent: Optional[float] = Field(default=None, ge=0, le=100)
+    gait_stability_score: Optional[float] = None
 
 
 class UserCreate(BaseModel):
