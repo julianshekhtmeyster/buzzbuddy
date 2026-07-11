@@ -43,7 +43,7 @@ struct MemoryRecallTestView: View {
                     Spacer()
                     Button("Submit") { finish() }
                         .buttonStyle(.borderedProminent)
-                        .disabled(input.isEmpty)
+                        .disabled(!MemoryRecallScoring.canSubmit(inputCount: input.count, sequenceLength: Self.sequenceLength))
                 }
                 .padding(.horizontal, 32)
             case .result(let accuracy):
@@ -62,6 +62,7 @@ struct MemoryRecallTestView: View {
         LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 12) {
             ForEach(0..<10, id: \.self) { digit in
                 Button {
+                    guard MemoryRecallScoring.canAppendDigit(currentInputCount: input.count, sequenceLength: Self.sequenceLength) else { return }
                     input.append(digit)
                 } label: {
                     Text("\(digit)")
@@ -90,9 +91,7 @@ struct MemoryRecallTestView: View {
     }
 
     private func finish() {
-        let matches = zip(sequence, input).filter { $0 == $1 }.count
-        let accuracy = (Double(matches) / Double(sequence.count)) * 100
-        stage = .result(accuracy)
+        stage = .result(MemoryRecallScoring.accuracy(sequence: sequence, input: input))
     }
 }
 

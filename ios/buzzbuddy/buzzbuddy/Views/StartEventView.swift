@@ -14,7 +14,7 @@ struct StartEventView: View {
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal)
 
-            Button(appState.isLoading ? "Starting..." : "Start Event") {
+            Button(appState.isLoading ? "Starting..." : "Start my night") {
                 Task { await appState.startEvent(name: eventName) }
             }
             .buttonStyle(.borderedProminent)

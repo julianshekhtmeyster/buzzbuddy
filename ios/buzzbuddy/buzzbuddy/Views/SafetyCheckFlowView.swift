@@ -11,6 +11,8 @@ struct SafetyCheckFlowView: View {
         switch appState.phase {
         case .onboarding:
             OnboardingView()
+        case .baselineUpgrade:
+            BaselineUpgradeView()
         case .restoring:
             ProgressView("Restoring your check-in...")
         case .restoreFailed:

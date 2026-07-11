@@ -13,7 +13,17 @@ struct DDContactIn: Codable {
 struct BaselineIn: Codable {
     var reactionTimeMs: Double
     var gyroStabilityScore: Double
-    var memoryRecallScore: Double
+    /// 0...100 percentage, not a 0...1 proportion.
+    var memoryRecallPercent: Double
+}
+
+/// Partial baseline update for PATCH /users/{id}/baseline -- only set the
+/// field(s) actually being (re)captured, e.g. a missing-baseline migration
+/// for an existing user only sends `memoryRecallPercent`.
+struct BaselineUpdate: Codable {
+    var reactionTimeMs: Double?
+    var gyroStabilityScore: Double?
+    var memoryRecallPercent: Double?
 }
 
 struct UserCreate: Codable {

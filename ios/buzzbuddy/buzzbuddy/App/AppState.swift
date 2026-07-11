@@ -23,6 +23,11 @@ enum TestKind: Equatable {
 final class AppState: ObservableObject {
     enum Phase: Equatable {
         case onboarding
+        /// An existing (onboarded) user is missing one or more sober
+        /// baselines -- e.g. they onboarded before the memory baseline
+        /// existed. Distinct from `.onboarding` because we're updating an
+        /// existing backend user, not creating a new one.
+        case baselineUpgrade
         case readyToStartEvent
         case startingEvent
         case takingTest(pendingTest: String)
@@ -40,7 +45,7 @@ final class AppState: ObservableObject {
     @Published var session: SessionOut?
     @Published private(set) var reactionBaselineMs: Double?
     @Published private(set) var gyroBaselineScore: Double?
-    @Published private(set) var memoryBaselineScore: Double?
+    @Published private(set) var memoryBaselinePercent: Double?
 
     private let api: BuzzBuddyAPIProtocol
     private let persistence: PersistenceStore
@@ -60,10 +65,14 @@ final class AppState: ObservableObject {
         self.eventId = persistence.eventId
         self.reactionBaselineMs = persistence.reactionBaselineMs
         self.gyroBaselineScore = persistence.gyroBaselineScore
-        self.memoryBaselineScore = persistence.memoryBaselineScore
+        self.memoryBaselinePercent = persistence.memoryBaselinePercent
 
         if !persistence.hasCompletedOnboarding {
             self.phase = .onboarding
+        } else if persistence.reactionBaselineMs == nil
+                    || persistence.gyroBaselineScore == nil
+                    || persistence.memoryBaselinePercent == nil {
+            self.phase = .baselineUpgrade
         } else if persistence.sessionId != nil {
             self.phase = .restoring
         } else {
@@ -86,7 +95,7 @@ final class AppState: ObservableObject {
         bmi: Double,
         reactionBaselineMs: Double,
         gyroBaselineScore: Double,
-        memoryBaselineScore: Double,
+        memoryBaselinePercent: Double,
         ddName: String,
         ddPhone: String
     ) async {
@@ -97,7 +106,7 @@ final class AppState: ObservableObject {
             let baseline = BaselineIn(
                 reactionTimeMs: reactionBaselineMs,
                 gyroStabilityScore: gyroBaselineScore,
-                memoryRecallScore: memoryBaselineScore
+                memoryRecallPercent: memoryBaselinePercent
             )
             let contact = DDContactIn(name: ddName, phoneNumber: ddPhone, email: nil)
             let payload = UserCreate(
@@ -110,10 +119,52 @@ final class AppState: ObservableObject {
             persistence.hasCompletedOnboarding = true
             persistence.reactionBaselineMs = reactionBaselineMs
             persistence.gyroBaselineScore = gyroBaselineScore
-            persistence.memoryBaselineScore = memoryBaselineScore
+            persistence.memoryBaselinePercent = memoryBaselinePercent
             self.reactionBaselineMs = reactionBaselineMs
             self.gyroBaselineScore = gyroBaselineScore
-            self.memoryBaselineScore = memoryBaselineScore
+            self.memoryBaselinePercent = memoryBaselinePercent
+            errorMessage = nil
+            phase = .readyToStartEvent
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// For an existing (already-onboarded) user missing one or more sober
+    /// baselines. Updates the existing backend user via PATCH -- never
+    /// creates a duplicate user. Only pass the baseline(s) actually being
+    /// (re)captured; omitted ones are left untouched both locally and on
+    /// the backend. On failure, nothing captured so far is lost -- the
+    /// caller's local form state is untouched and `.baselineUpgrade`
+    /// remains the phase, so the user can retry without redoing any test.
+    func completeBaselineUpgrade(
+        reactionBaselineMs: Double?,
+        gyroBaselineScore: Double?,
+        memoryBaselinePercent: Double?
+    ) async {
+        guard let userId else { return }
+        guard case .baselineUpgrade = phase, !isLoading else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let payload = BaselineUpdate(
+                reactionTimeMs: reactionBaselineMs,
+                gyroStabilityScore: gyroBaselineScore,
+                memoryRecallPercent: memoryBaselinePercent
+            )
+            _ = try await api.updateBaseline(userId: userId, payload)
+            if let reactionBaselineMs {
+                persistence.reactionBaselineMs = reactionBaselineMs
+                self.reactionBaselineMs = reactionBaselineMs
+            }
+            if let gyroBaselineScore {
+                persistence.gyroBaselineScore = gyroBaselineScore
+                self.gyroBaselineScore = gyroBaselineScore
+            }
+            if let memoryBaselinePercent {
+                persistence.memoryBaselinePercent = memoryBaselinePercent
+                self.memoryBaselinePercent = memoryBaselinePercent
+            }
             errorMessage = nil
             phase = .readyToStartEvent
         } catch {

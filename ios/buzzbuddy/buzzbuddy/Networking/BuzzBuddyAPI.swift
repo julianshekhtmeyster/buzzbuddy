@@ -16,6 +16,7 @@ enum APIError: LocalizedError {
 
 protocol BuzzBuddyAPIProtocol {
     func createUser(_ payload: UserCreate) async throws -> UserOut
+    func updateBaseline(userId: String, _ payload: BaselineUpdate) async throws -> UserOut
     func createEvent(_ payload: EventCreate) async throws -> EventOut
     func startSession(eventId: String) async throws -> SessionOut
     func submitTestResult(sessionId: String, _ payload: TestResultIn) async throws -> SessionOut
@@ -115,6 +116,10 @@ final class BuzzBuddyAPI: BuzzBuddyAPIProtocol {
 
     func createUser(_ payload: UserCreate) async throws -> UserOut {
         try await send("/users", body: payload)
+    }
+
+    func updateBaseline(userId: String, _ payload: BaselineUpdate) async throws -> UserOut {
+        try await send("/users/\(userId)/baseline", method: "PATCH", body: payload)
     }
 
     func createEvent(_ payload: EventCreate) async throws -> EventOut {

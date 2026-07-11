@@ -20,7 +20,7 @@ def retrieve_baseline(db: DBSession, session: AgentSession, args: dict) -> dict:
     return {
         "reaction_time_ms": baseline.reaction_time_ms,
         "gyro_stability_score": baseline.gyro_stability_score,
-        "memory_recall_score": baseline.memory_recall_score,
+        "memory_recall_percent": baseline.memory_recall_percent,
         "weight_kg": user.weight_kg,
         "height_cm": user.height_cm,
         "bmi": user.bmi,
@@ -31,7 +31,7 @@ _BASELINE_FIELD_BY_TEST = {
     "reaction": "reaction_time_ms",
     "gyro": "gyro_stability_score",
     "balance": "gyro_stability_score",
-    "memory": "memory_recall_score",
+    "memory": "memory_recall_percent",
 }
 
 

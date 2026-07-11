@@ -12,9 +12,12 @@ struct ContentView: View {
 
     var body: some View {
         Group {
-            if appState.phase == .onboarding {
+            switch appState.phase {
+            case .onboarding:
                 OnboardingView()
-            } else {
+            case .baselineUpgrade:
+                BaselineUpgradeView()
+            default:
                 MainTabView()
             }
         }
