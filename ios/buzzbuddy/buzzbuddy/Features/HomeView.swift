@@ -8,17 +8,26 @@
 import SwiftUI
 
 struct HomeView: View {
+    
+    @ObservedObject var engine:TestEngine
+    @State private var showingTest = false
+
+    
     var body: some View {
+        
         NavigationStack {
             VStack {
-                Text("Home")
-                    .font(.largeTitle)
+                Button("Start Game"){
+                    engine.startTest()
+                    showingTest = true
+                }
             }
             .navigationTitle("Home")
+        }.fullScreenCover(isPresented: $showingTest) {
+            TestSessionView()
+                .environmentObject(engine)
         }
     }
 }
 
-#Preview {
-    HomeView()
-}
+
