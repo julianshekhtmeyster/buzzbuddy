@@ -95,13 +95,8 @@ class TestEngine: ObservableObject {
 @main
 struct BuzzBuddyApp: App {
     var body: some Scene {
-        
-        @StateObject var engine = TestEngine()
-        
         WindowGroup {
-            
-            
-            ContentView(gameEngine: engine)
+            ContentView()
         }
     }
 }

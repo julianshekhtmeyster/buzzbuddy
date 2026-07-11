@@ -9,16 +9,10 @@
 import SwiftUI
 
 struct MainTabView: View {
-    
-    @ObservedObject var gameEngine:TestEngine
-
-
     var body: some View {
-    
-
         TabView {
 
-            HomeView(engine: gameEngine)
+            HomeView()
                 .tabItem {
                     Label("Home", systemImage: "house.fill")
                 }

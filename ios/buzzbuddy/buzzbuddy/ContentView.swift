@@ -8,12 +8,11 @@
 import SwiftUI
 
 struct ContentView: View {
-    
-    @ObservedObject var gameEngine:TestEngine
-    
     var body: some View {
-        MainTabView(gameEngine: gameEngine)
+        MainTabView()
     }
 }
 
-
+#Preview {
+    ContentView()
+}
