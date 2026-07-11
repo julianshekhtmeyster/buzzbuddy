@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from openai import OpenAIError
 from sqlalchemy.orm import Session as DBSession
 
 from ..agent.loop import run_agent_turn
@@ -7,6 +8,13 @@ from ..models import AgentSession, Baseline, DDContact, Event, TestResult, User
 from ..schemas import EventCreate, EventOut, SessionOut, TestResultIn, UserCreate, UserOut
 
 router = APIRouter()
+
+
+def _run_agent_turn_or_502(db: DBSession, session: AgentSession, message: str) -> AgentSession:
+    try:
+        return run_agent_turn(db, session, message)
+    except OpenAIError as e:
+        raise HTTPException(status_code=502, detail=f"AI examiner call failed: {e}")
 
 
 @router.post("/users", response_model=UserOut)
@@ -64,7 +72,7 @@ def start_session(event_id: str, db: DBSession = Depends(get_db)):
     db.commit()
     db.refresh(session)
 
-    session = run_agent_turn(
+    session = _run_agent_turn_or_502(
         db,
         session,
         "The event has started and the user wants to check in before deciding "
@@ -85,7 +93,7 @@ def submit_test_result(session_id: str, payload: TestResultIn, db: DBSession = D
     session.pending_test = None
     db.commit()
 
-    session = run_agent_turn(
+    session = _run_agent_turn_or_502(
         db,
         session,
         f"The user completed the '{payload.test_type}' test with a raw sensor "
