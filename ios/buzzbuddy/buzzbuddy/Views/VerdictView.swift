@@ -35,15 +35,15 @@ struct VerdictView: View {
                     }
 
                     DisclosureGroup("Full reasoning") {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: 10) {
                             ForEach(session.reasoningLog, id: \.self) { line in
-                                Text("• \(line)").font(.system(.footnote, design: .monospaced))
+                                Text("• \(line)").font(.system(.body, design: .monospaced))
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.top, 4)
                     }
-                    .font(.subheadline)
+                    .font(.headline)
 
                     Text("BuzzBuddy does not estimate BAC and does not tell you whether it's legal for you to drive.")
                         .font(.caption)
