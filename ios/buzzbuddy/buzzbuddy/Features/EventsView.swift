@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import MapKit
 
 // MARK: - Event Model
 
@@ -141,16 +142,8 @@ private struct EventCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(event.name)
-                        .font(.system(size: 20, weight: .bold))
-
-                    if let location = event.location {
-                        Text(location.name)
-                            .font(.system(size: 14))
-                            .foregroundStyle(.secondary)
-                    }
-                }
+                Text(event.name)
+                    .font(.system(size: 20, weight: .bold))
 
                 Spacer()
 
@@ -162,6 +155,30 @@ private struct EventCard: View {
                         .foregroundStyle(.white)
                 }
                 .buttonStyle(.plain)
+            }
+
+            if let location = event.location {
+                Text(location.name)
+                    .font(.system(size: 14))
+                    .foregroundStyle(.secondary)
+
+                Map(initialPosition: .region(
+                    MKCoordinateRegion(
+                        center: location.coordinate,
+                        span: MKCoordinateSpan(latitudeDelta: 0.01, longitudeDelta: 0.01)
+                    )
+                )) {
+                    Marker(location.name, coordinate: location.coordinate)
+                }
+                .frame(maxWidth: .infinity)
+                .frame(height: 160)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .allowsHitTesting(false)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .stroke(Color(.systemGray4), lineWidth: 1)
+                )
+                .padding(.top, 6)
             }
 
             if let contact = event.contact {
