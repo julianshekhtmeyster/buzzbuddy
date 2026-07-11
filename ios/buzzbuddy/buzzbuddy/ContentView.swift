@@ -8,12 +8,20 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject var appState: AppState
 
     var body: some View {
-        MainTabView()
+        Group {
+            if appState.phase == .onboarding {
+                OnboardingView()
+            } else {
+                MainTabView()
+            }
+        }
+        .task { await appState.bootstrap() }
     }
 }
 
 #Preview {
-    ContentView()
+    ContentView().environmentObject(AppState())
 }

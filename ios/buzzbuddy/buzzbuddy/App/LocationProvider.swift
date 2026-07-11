@@ -1,10 +1,14 @@
 import CoreLocation
 
+protocol LocationProviding {
+    func currentLocation() async -> CLLocationCoordinate2D?
+}
+
 /// Best-effort one-shot location fetch. Used to attach a location to test
 /// submissions so the backend can include it in a DD alert if the AI
 /// escalates. Failure/denial is not fatal -- callers should treat a nil
 /// result as "no location available" and continue without it.
-final class LocationProvider: NSObject, CLLocationManagerDelegate {
+final class LocationProvider: NSObject, LocationProviding, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocationCoordinate2D?, Never>?
     private var isWaitingForAuthorization = false

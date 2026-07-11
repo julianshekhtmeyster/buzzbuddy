@@ -1,23 +1,81 @@
 import Foundation
 
+/// How a backend `pendingTest`/`test_type` string maps to an iOS test view.
+/// `.unknown` exists so an unrecognized value gets a controlled error screen
+/// instead of silently falling through to the reaction test.
+enum TestKind: Equatable {
+    case reaction
+    case balance
+    case memory
+    case unknown
+
+    init(pendingTest: String) {
+        switch pendingTest {
+        case "reaction": self = .reaction
+        case "gyro", "balance": self = .balance
+        case "memory": self = .memory
+        default: self = .unknown
+        }
+    }
+}
+
 @MainActor
 final class AppState: ObservableObject {
     enum Phase: Equatable {
         case onboarding
         case readyToStartEvent
+        case startingEvent
         case takingTest(pendingTest: String)
+        case reviewingTest(pendingTest: String)
+        case submissionFailed(pendingTest: String, testType: String, rawValue: Double)
+        case unsupportedTest(pendingTest: String)
         case verdict
+        case restoring
+        case restoreFailed(sessionId: String)
     }
 
-    @Published var phase: Phase = .onboarding
+    @Published var phase: Phase
     @Published var errorMessage: String?
     @Published var isLoading = false
     @Published var session: SessionOut?
+    @Published private(set) var reactionBaselineMs: Double?
+    @Published private(set) var gyroBaselineScore: Double?
 
-    private let api = BuzzBuddyAPI()
-    private let locationProvider = LocationProvider()
+    private let api: BuzzBuddyAPIProtocol
+    private let persistence: PersistenceStore
+    private let locationProvider: LocationProviding
     private var userId: String?
     private var eventId: String?
+
+    init(
+        api: BuzzBuddyAPIProtocol = BuzzBuddyAPI(),
+        persistence: PersistenceStore = UserDefaultsPersistenceStore(),
+        locationProvider: LocationProviding = LocationProvider()
+    ) {
+        self.api = api
+        self.persistence = persistence
+        self.locationProvider = locationProvider
+        self.userId = persistence.userId
+        self.eventId = persistence.eventId
+        self.reactionBaselineMs = persistence.reactionBaselineMs
+        self.gyroBaselineScore = persistence.gyroBaselineScore
+
+        if !persistence.hasCompletedOnboarding {
+            self.phase = .onboarding
+        } else if persistence.sessionId != nil {
+            self.phase = .restoring
+        } else {
+            self.phase = .readyToStartEvent
+        }
+    }
+
+    /// Call once at app launch (after the view hierarchy has read the
+    /// synchronous initial `phase`). Only does work if a session needs
+    /// restoring; otherwise it's a no-op.
+    func bootstrap() async {
+        guard case .restoring = phase, let sessionId = persistence.sessionId else { return }
+        await restoreSession(sessionId: sessionId)
+    }
 
     func completeOnboarding(
         name: String,
@@ -29,11 +87,13 @@ final class AppState: ObservableObject {
         ddName: String,
         ddPhone: String
     ) async {
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
-            // Memory baseline is a placeholder until a memory-recall test is
-            // built — reaction and gyro/balance are both real now.
+            // Memory baseline is a placeholder until onboarding captures a
+            // real memory-recall baseline -- reaction and gyro/balance are
+            // both real now.
             let baseline = BaselineIn(
                 reactionTimeMs: reactionBaselineMs,
                 gyroStabilityScore: gyroBaselineScore,
@@ -46,6 +106,12 @@ final class AppState: ObservableObject {
             )
             let user = try await api.createUser(payload)
             userId = user.id
+            persistence.userId = user.id
+            persistence.hasCompletedOnboarding = true
+            persistence.reactionBaselineMs = reactionBaselineMs
+            persistence.gyroBaselineScore = gyroBaselineScore
+            self.reactionBaselineMs = reactionBaselineMs
+            self.gyroBaselineScore = gyroBaselineScore
             errorMessage = nil
             phase = .readyToStartEvent
         } catch {
@@ -55,22 +121,39 @@ final class AppState: ObservableObject {
 
     func startEvent(name: String) async {
         guard let userId else { return }
+        guard case .readyToStartEvent = phase, !isLoading else { return }
+        phase = .startingEvent
         isLoading = true
         defer { isLoading = false }
         do {
             let event = try await api.createEvent(EventCreate(userId: userId, name: name))
             eventId = event.id
+            persistence.eventId = event.id
             let session = try await api.startSession(eventId: event.id)
             self.session = session
+            persistence.sessionId = session.id
             errorMessage = nil
             advance(from: session)
         } catch {
             errorMessage = error.localizedDescription
+            phase = .readyToStartEvent
         }
     }
 
     func submitTestResult(testType: String, rawValue: Double) async {
+        guard case .takingTest(let pendingTest) = phase, !isLoading else { return }
+        await performSubmit(pendingTest: pendingTest, testType: testType, rawValue: rawValue)
+    }
+
+    /// Resubmits the same result that failed, without re-running the test.
+    func retrySubmission() async {
+        guard case .submissionFailed(let pendingTest, let testType, let rawValue) = phase, !isLoading else { return }
+        await performSubmit(pendingTest: pendingTest, testType: testType, rawValue: rawValue)
+    }
+
+    private func performSubmit(pendingTest: String, testType: String, rawValue: Double) async {
         guard let session else { return }
+        phase = .reviewingTest(pendingTest: pendingTest)
         isLoading = true
         defer { isLoading = false }
         do {
@@ -87,23 +170,58 @@ final class AppState: ObservableObject {
                 )
             )
             self.session = updated
+            persistence.sessionId = updated.id
             errorMessage = nil
             advance(from: updated)
         } catch {
             errorMessage = error.localizedDescription
+            phase = .submissionFailed(pendingTest: pendingTest, testType: testType, rawValue: rawValue)
+        }
+    }
+
+    func retryRestore() async {
+        guard case .restoreFailed(let sessionId) = phase, !isLoading else { return }
+        phase = .restoring
+        await restoreSession(sessionId: sessionId)
+    }
+
+    /// Explicit, user-initiated abandonment of an unrestorable session --
+    /// restoration failures never clear persisted state on their own.
+    func discardSession() {
+        persistence.sessionId = nil
+        session = nil
+        errorMessage = nil
+        phase = .readyToStartEvent
+    }
+
+    private func restoreSession(sessionId: String) async {
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let session = try await api.getSession(sessionId: sessionId)
+            self.session = session
+            errorMessage = nil
+            advance(from: session)
+        } catch {
+            errorMessage = error.localizedDescription
+            phase = .restoreFailed(sessionId: sessionId)
         }
     }
 
     private func advance(from session: SessionOut) {
         // `status` (clear/mild/severe) is the AI's evolving confidence label,
-        // not a lifecycle flag — it can say "severe" while still wanting a
+        // not a lifecycle flag -- it can say "severe" while still wanting a
         // cross-check test before concluding. The session is actually over
         // only once the DD has been notified, or the AI stopped requesting
         // further tests.
-        if session.notified || session.pendingTest == nil {
+        guard !session.notified, let pendingTest = session.pendingTest else {
             phase = .verdict
+            return
+        }
+        if TestKind(pendingTest: pendingTest) == .unknown {
+            phase = .unsupportedTest(pendingTest: pendingTest)
         } else {
-            phase = .takingTest(pendingTest: session.pendingTest!)
+            phase = .takingTest(pendingTest: pendingTest)
         }
     }
 }

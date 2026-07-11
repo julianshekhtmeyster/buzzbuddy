@@ -3,20 +3,77 @@ import Foundation
 enum APIError: LocalizedError {
     case invalidResponse
     case server(String)
+    case configuration(String)
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse: return "Invalid response from server"
         case .server(let message): return message
+        case .configuration(let message): return message
         }
     }
 }
 
-final class BuzzBuddyAPI {
-    // iOS Simulator can reach the Mac's own localhost directly. For a
-    // physical device, or once the backend is deployed to App Platform,
-    // replace this with the LAN IP or the deployed HTTPS URL.
-    static let baseURL = URL(string: "http://127.0.0.1:8000")!
+protocol BuzzBuddyAPIProtocol {
+    func createUser(_ payload: UserCreate) async throws -> UserOut
+    func createEvent(_ payload: EventCreate) async throws -> EventOut
+    func startSession(eventId: String) async throws -> SessionOut
+    func submitTestResult(sessionId: String, _ payload: TestResultIn) async throws -> SessionOut
+    func getSession(sessionId: String) async throws -> SessionOut
+}
+
+/// Resolves the backend base URL, in order: the `BUZZBUDDY_API_BASE_URL`
+/// scheme environment variable, then the `BuzzBuddyAPIBaseURL` Info.plist
+/// key, then (Debug builds only) localhost. A Release build with neither an
+/// env var nor a plist value fails with a configuration error rather than
+/// silently pointing at a developer's machine.
+enum APIConfiguration {
+    static let environmentKey = "BUZZBUDDY_API_BASE_URL"
+    static let infoPlistKey = "BuzzBuddyAPIBaseURL"
+
+    static func resolveBaseURL(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        infoDictionary: [String: Any]? = Bundle.main.infoDictionary
+    ) -> Result<URL, APIError> {
+        if let value = environment[environmentKey], !value.isEmpty {
+            return validate(value)
+        }
+        if let value = infoDictionary?[infoPlistKey] as? String, !value.isEmpty {
+            return validate(value)
+        }
+        #if DEBUG
+        return validate("http://127.0.0.1:8000")
+        #else
+        return .failure(.configuration(
+            "No backend URL configured. Set \(infoPlistKey) in Info.plist or the \(environmentKey) scheme environment variable."
+        ))
+        #endif
+    }
+
+    private static func validate(_ string: String) -> Result<URL, APIError> {
+        guard let url = URL(string: string),
+              let scheme = url.scheme?.lowercased(),
+              scheme == "http" || scheme == "https"
+        else {
+            return .failure(.configuration("Invalid backend URL \"\(string)\" -- must be http:// or https://"))
+        }
+        return .success(url)
+    }
+}
+
+final class BuzzBuddyAPI: BuzzBuddyAPIProtocol {
+    private let baseURLResult: Result<URL, APIError>
+
+    init(
+        environment: [String: String] = ProcessInfo.processInfo.environment,
+        infoDictionary: [String: Any]? = Bundle.main.infoDictionary
+    ) {
+        self.baseURLResult = APIConfiguration.resolveBaseURL(environment: environment, infoDictionary: infoDictionary)
+    }
+
+    private func baseURL() throws -> URL {
+        try baseURLResult.get()
+    }
 
     private let encoder: JSONEncoder = {
         let encoder = JSONEncoder()
@@ -41,7 +98,7 @@ final class BuzzBuddyAPI {
     }
 
     private func send<Response: Decodable>(_ path: String, method: String) async throws -> Response {
-        var request = URLRequest(url: BuzzBuddyAPI.baseURL.appendingPathComponent(path))
+        var request = URLRequest(url: try baseURL().appendingPathComponent(path))
         request.httpMethod = method
         return try await perform(request)
     }
@@ -49,7 +106,7 @@ final class BuzzBuddyAPI {
     private func send<Body: Encodable, Response: Decodable>(
         _ path: String, method: String = "POST", body: Body
     ) async throws -> Response {
-        var request = URLRequest(url: BuzzBuddyAPI.baseURL.appendingPathComponent(path))
+        var request = URLRequest(url: try baseURL().appendingPathComponent(path))
         request.httpMethod = method
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try encoder.encode(body)

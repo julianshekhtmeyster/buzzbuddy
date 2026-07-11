@@ -97,6 +97,8 @@ class TestEngine: ObservableObject {
 
 @main
 struct BuzzBuddyApp: App {
+    @StateObject private var appState = AppState()
+
     var body: some Scene {
 
         @StateObject var engine = TestEngine()
@@ -105,7 +107,7 @@ struct BuzzBuddyApp: App {
         
             ContentView()
                 .environmentObject(engine)
-            
+                .environmentObject(appState)
         }
     }
 }
