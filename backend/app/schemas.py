@@ -31,7 +31,7 @@ class UserCreate(BaseModel):
     weight_kg: float
     height_cm: float
     bmi: float
-    baseline: BaselineIn
+    baseline: Optional[BaselineIn] = None
     dd_contacts: list[DDContactIn]
 
 
@@ -76,3 +76,11 @@ class SessionOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class DDChatRequest(BaseModel):
+    question: str
+
+
+class DDChatResponse(BaseModel):
+    answer: str

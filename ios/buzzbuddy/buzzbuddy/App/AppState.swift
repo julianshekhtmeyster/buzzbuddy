@@ -23,11 +23,6 @@ enum TestKind: Equatable {
 final class AppState: ObservableObject {
     enum Phase: Equatable {
         case onboarding
-        /// An existing (onboarded) user is missing one or more sober
-        /// baselines -- e.g. they onboarded before the memory baseline
-        /// existed. Distinct from `.onboarding` because we're updating an
-        /// existing backend user, not creating a new one.
-        case baselineUpgrade
         case readyToStartEvent
         case startingEvent
         case takingTest(pendingTest: String)
@@ -41,6 +36,11 @@ final class AppState: ObservableObject {
 
     @Published var phase: Phase
     @Published var errorMessage: String?
+    /// Separate from `errorMessage` because the Baseline tab is reachable
+    /// alongside every other phase -- if it read the shared `errorMessage`,
+    /// an unrelated failure (e.g. a failed session restore) would bleed
+    /// onto the Baseline screen as a confusing, unrelated error.
+    @Published var baselineErrorMessage: String?
     @Published var isLoading = false
     @Published var session: SessionOut?
     @Published private(set) var reactionBaselineMs: Double?
@@ -69,10 +69,6 @@ final class AppState: ObservableObject {
 
         if !persistence.hasCompletedOnboarding {
             self.phase = .onboarding
-        } else if persistence.reactionBaselineMs == nil
-                    || persistence.gyroBaselineScore == nil
-                    || persistence.memoryBaselinePercent == nil {
-            self.phase = .baselineUpgrade
         } else if persistence.sessionId != nil {
             self.phase = .restoring
         } else {
@@ -93,9 +89,6 @@ final class AppState: ObservableObject {
         weightKg: Double,
         heightCm: Double,
         bmi: Double,
-        reactionBaselineMs: Double,
-        gyroBaselineScore: Double,
-        memoryBaselinePercent: Double,
         ddName: String,
         ddPhone: String
     ) async {
@@ -103,26 +96,15 @@ final class AppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            let baseline = BaselineIn(
-                reactionTimeMs: reactionBaselineMs,
-                gyroStabilityScore: gyroBaselineScore,
-                memoryRecallPercent: memoryBaselinePercent
-            )
             let contact = DDContactIn(name: ddName, phoneNumber: ddPhone, email: nil)
             let payload = UserCreate(
                 name: name, weightKg: weightKg, heightCm: heightCm, bmi: bmi,
-                baseline: baseline, ddContacts: [contact]
+                baseline: nil, ddContacts: [contact]
             )
             let user = try await api.createUser(payload)
             userId = user.id
             persistence.userId = user.id
             persistence.hasCompletedOnboarding = true
-            persistence.reactionBaselineMs = reactionBaselineMs
-            persistence.gyroBaselineScore = gyroBaselineScore
-            persistence.memoryBaselinePercent = memoryBaselinePercent
-            self.reactionBaselineMs = reactionBaselineMs
-            self.gyroBaselineScore = gyroBaselineScore
-            self.memoryBaselinePercent = memoryBaselinePercent
             errorMessage = nil
             phase = .readyToStartEvent
         } catch {
@@ -130,20 +112,18 @@ final class AppState: ObservableObject {
         }
     }
 
-    /// For an existing (already-onboarded) user missing one or more sober
-    /// baselines. Updates the existing backend user via PATCH -- never
-    /// creates a duplicate user. Only pass the baseline(s) actually being
-    /// (re)captured; omitted ones are left untouched both locally and on
-    /// the backend. On failure, nothing captured so far is lost -- the
-    /// caller's local form state is untouched and `.baselineUpgrade`
-    /// remains the phase, so the user can retry without redoing any test.
-    func completeBaselineUpgrade(
-        reactionBaselineMs: Double?,
-        gyroBaselineScore: Double?,
-        memoryBaselinePercent: Double?
+    /// Captures or overwrites any of the user's sober baselines from the
+    /// Baseline tab, independent of app phase -- unlike onboarding, this
+    /// never gates navigation to the rest of the app. Only pass the
+    /// baseline(s) actually being (re)captured; omitted ones are left
+    /// untouched both locally and on the backend.
+    func updateBaseline(
+        reactionBaselineMs: Double? = nil,
+        gyroBaselineScore: Double? = nil,
+        memoryBaselinePercent: Double? = nil
     ) async {
         guard let userId else { return }
-        guard case .baselineUpgrade = phase, !isLoading else { return }
+        guard !isLoading else { return }
         isLoading = true
         defer { isLoading = false }
         do {
@@ -165,10 +145,9 @@ final class AppState: ObservableObject {
                 persistence.memoryBaselinePercent = memoryBaselinePercent
                 self.memoryBaselinePercent = memoryBaselinePercent
             }
-            errorMessage = nil
-            phase = .readyToStartEvent
+            baselineErrorMessage = nil
         } catch {
-            errorMessage = error.localizedDescription
+            baselineErrorMessage = error.localizedDescription
         }
     }
 

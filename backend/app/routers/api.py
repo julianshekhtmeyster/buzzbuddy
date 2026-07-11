@@ -2,11 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from openai import OpenAIError
 from sqlalchemy.orm import Session as DBSession
 
+from ..agent.dd_companion import ask_dd_companion
 from ..agent.loop import run_agent_turn
 from ..database import get_db
 from ..models import AgentSession, Baseline, DDContact, Event, TestResult, User
 from ..schemas import (
     BaselineUpdate,
+    DDChatRequest,
+    DDChatResponse,
     EventCreate,
     EventOut,
     SessionOut,
@@ -36,14 +39,15 @@ def create_user(payload: UserCreate, db: DBSession = Depends(get_db)):
     db.add(user)
     db.flush()
 
-    db.add(
-        Baseline(
-            user_id=user.id,
-            reaction_time_ms=payload.baseline.reaction_time_ms,
-            gyro_stability_score=payload.baseline.gyro_stability_score,
-            memory_recall_percent=payload.baseline.memory_recall_percent,
+    if payload.baseline is not None:
+        db.add(
+            Baseline(
+                user_id=user.id,
+                reaction_time_ms=payload.baseline.reaction_time_ms,
+                gyro_stability_score=payload.baseline.gyro_stability_score,
+                memory_recall_percent=payload.baseline.memory_recall_percent,
+            )
         )
-    )
     for contact in payload.dd_contacts:
         db.add(DDContact(user_id=user.id, **contact.model_dump()))
 
@@ -158,3 +162,18 @@ def get_session(session_id: str, db: DBSession = Depends(get_db)):
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
     return session
+
+
+@router.post("/sessions/{session_id}/dd-chat", response_model=DDChatResponse)
+def dd_chat(session_id: str, payload: DDChatRequest, db: DBSession = Depends(get_db)):
+    """Lets a designated driver ask questions about a concluded (or
+    in-progress) session. Uses a separate DO agent from the examiner loop --
+    read-only, no tool calling, never decides impairment itself."""
+    session = db.get(AgentSession, session_id)
+    if session is None:
+        raise HTTPException(status_code=404, detail="session not found")
+    try:
+        answer = ask_dd_companion(session, payload.question)
+    except OpenAIError as e:
+        raise HTTPException(status_code=502, detail=f"DD companion call failed: {e}")
+    return DDChatResponse(answer=answer)

@@ -60,6 +60,10 @@ private final class MockBuzzBuddyAPI: BuzzBuddyAPIProtocol {
         getSessionCalledWith = sessionId
         return try getSessionResult.get()
     }
+    var ddChatResult: Result<DDChatResponse, Error> = .success(DDChatResponse(answer: "Test answer"))
+    func sendDDChatMessage(sessionId: String, question: String) async throws -> DDChatResponse {
+        try ddChatResult.get()
+    }
 }
 
 private final class InMemoryPersistenceStore: PersistenceStore {
@@ -115,18 +119,14 @@ struct AppStatePhaseTests {
         #expect(appState.phase == .readyToStartEvent)
     }
 
-    @Test func existingUserMissingMemoryBaselineEntersBaselineUpgrade() {
+    @Test func existingUserMissingBaselinesStillEntersReadyToStartEvent() {
+        // Missing baselines no longer gate navigation -- they're managed
+        // from the Baseline tab, not blocked behind a dedicated phase.
         let persistence = fullyOnboardedPersistence()
         persistence.memoryBaselinePercent = nil
-        let appState = AppState(api: MockBuzzBuddyAPI(), persistence: persistence, locationProvider: NoOpLocationProvider())
-        #expect(appState.phase == .baselineUpgrade)
-    }
-
-    @Test func existingUserMissingReactionBaselineEntersBaselineUpgrade() {
-        let persistence = fullyOnboardedPersistence()
         persistence.reactionBaselineMs = nil
         let appState = AppState(api: MockBuzzBuddyAPI(), persistence: persistence, locationProvider: NoOpLocationProvider())
-        #expect(appState.phase == .baselineUpgrade)
+        #expect(appState.phase == .readyToStartEvent)
     }
 
     @Test func existingUserWithActiveSessionEntersRestoring() {
@@ -136,7 +136,7 @@ struct AppStatePhaseTests {
     }
 }
 
-// MARK: - Onboarding / baseline-upgrade AppState tests
+// MARK: - Onboarding / baseline AppState tests
 
 @MainActor
 struct AppStateOnboardingTests {
@@ -148,24 +148,22 @@ struct AppStateOnboardingTests {
 
         await appState.completeOnboarding(
             name: "Justin", weightKg: 70, heightCm: 175, bmi: 22.9,
-            reactionBaselineMs: 250, gyroBaselineScore: 0.9, memoryBaselinePercent: 80,
             ddName: "DD", ddPhone: "555-0100"
         )
 
         #expect(persistence.userId == "user-1")
         #expect(persistence.hasCompletedOnboarding == true)
-        #expect(persistence.memoryBaselinePercent == 80)
         #expect(appState.phase == .readyToStartEvent)
     }
 
-    @Test func baselineUpgradeUpdatesExistingUserNotCreateUser() async {
+    @Test func updateBaselineUpdatesExistingUserNotCreateUser() async {
         let api = MockBuzzBuddyAPI()
         let persistence = fullyOnboardedPersistence()
         persistence.memoryBaselinePercent = nil
         let appState = AppState(api: api, persistence: persistence, locationProvider: NoOpLocationProvider())
-        #expect(appState.phase == .baselineUpgrade)
+        #expect(appState.phase == .readyToStartEvent)
 
-        await appState.completeBaselineUpgrade(reactionBaselineMs: nil, gyroBaselineScore: nil, memoryBaselinePercent: 80)
+        await appState.updateBaseline(memoryBaselinePercent: 80)
 
         #expect(api.createUserCalled == false)
         #expect(api.updateBaselineCalledWith?.userId == "user-1")
@@ -175,17 +173,17 @@ struct AppStateOnboardingTests {
         #expect(appState.phase == .readyToStartEvent)
     }
 
-    @Test func baselineUpgradeFailurePreservesStateAndStaysOnUpgrade() async {
+    @Test func updateBaselineFailurePreservesState() async {
         let api = MockBuzzBuddyAPI()
         api.updateBaselineResult = .failure(MockError())
         let persistence = fullyOnboardedPersistence()
         persistence.memoryBaselinePercent = nil
         let appState = AppState(api: api, persistence: persistence, locationProvider: NoOpLocationProvider())
 
-        await appState.completeBaselineUpgrade(reactionBaselineMs: nil, gyroBaselineScore: nil, memoryBaselinePercent: 80)
+        await appState.updateBaseline(memoryBaselinePercent: 80)
 
-        #expect(appState.phase == .baselineUpgrade)
-        #expect(appState.errorMessage != nil)
+        #expect(appState.phase == .readyToStartEvent)
+        #expect(appState.baselineErrorMessage != nil)
         // Nothing was persisted since the backend call failed.
         #expect(persistence.memoryBaselinePercent == nil)
     }

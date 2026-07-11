@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The full BuzzBuddy safety-check flow: baseline setup, starting an event,
+/// The full BuzzBuddy safety-check flow: onboarding, starting an event,
 /// taking whichever test the AI examiner requests, and the final verdict.
+/// Sober baselines are captured separately, from the Baseline tab.
 /// Observes the app-wide AppState injected by BuzzBuddyApp -- never creates
 /// its own, so every tab that embeds this shares one session.
 struct SafetyCheckFlowView: View {
@@ -11,8 +12,6 @@ struct SafetyCheckFlowView: View {
         switch appState.phase {
         case .onboarding:
             OnboardingView()
-        case .baselineUpgrade:
-            BaselineUpgradeView()
         case .restoring:
             ProgressView("Restoring your check-in...")
         case .restoreFailed:

@@ -48,7 +48,7 @@ struct MainTabView: View {
                 case .contacts:
                     ContactsView()
                 case .quiz:
-                    HomeView()
+                    QuizView()
                 case .baseline:
                     BaselineView()
                 case .settings:

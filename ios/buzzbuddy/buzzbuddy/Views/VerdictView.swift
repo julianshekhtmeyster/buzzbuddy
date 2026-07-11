@@ -2,6 +2,7 @@ import SwiftUI
 
 struct VerdictView: View {
     @EnvironmentObject var appState: AppState
+    @State private var showDDCompanionPreview = false
 
     var body: some View {
         VStack(spacing: 16) {
@@ -15,6 +16,11 @@ struct VerdictView: View {
                 if session.notified {
                     Text("Your designated driver has been notified.")
                         .foregroundStyle(.orange)
+
+                    Button("Preview DD companion") {
+                        showDDCompanionPreview = true
+                    }
+                    .buttonStyle(.bordered)
                 }
 
                 ScrollView {
@@ -33,6 +39,11 @@ struct VerdictView: View {
             }
         }
         .padding()
+        .sheet(isPresented: $showDDCompanionPreview) {
+            if let sessionId = appState.session?.id {
+                DDCompanionPreviewView(sessionId: sessionId)
+            }
+        }
     }
 
     private func title(for status: String) -> String {

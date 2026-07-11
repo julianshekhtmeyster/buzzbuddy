@@ -31,7 +31,7 @@ struct UserCreate: Codable {
     var weightKg: Double
     var heightCm: Double
     var bmi: Double
-    var baseline: BaselineIn
+    var baseline: BaselineIn?
     var ddContacts: [DDContactIn]
 }
 
@@ -67,4 +67,14 @@ struct SessionOut: Codable {
     var pendingTest: String?
     var reasoningLog: [String]
     var notified: Bool
+}
+
+/// Backed by a separate DO agent from the examiner loop -- read-only Q&A
+/// about an already-computed session, for the designated driver.
+struct DDChatRequest: Codable {
+    var question: String
+}
+
+struct DDChatResponse: Codable {
+    var answer: String
 }

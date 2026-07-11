@@ -21,6 +21,7 @@ protocol BuzzBuddyAPIProtocol {
     func startSession(eventId: String) async throws -> SessionOut
     func submitTestResult(sessionId: String, _ payload: TestResultIn) async throws -> SessionOut
     func getSession(sessionId: String) async throws -> SessionOut
+    func sendDDChatMessage(sessionId: String, question: String) async throws -> DDChatResponse
 }
 
 /// Resolves the backend base URL, in order: the `BUZZBUDDY_API_BASE_URL`
@@ -136,5 +137,9 @@ final class BuzzBuddyAPI: BuzzBuddyAPIProtocol {
 
     func getSession(sessionId: String) async throws -> SessionOut {
         try await send("/sessions/\(sessionId)", method: "GET")
+    }
+
+    func sendDDChatMessage(sessionId: String, question: String) async throws -> DDChatResponse {
+        try await send("/sessions/\(sessionId)/dd-chat", body: DDChatRequest(question: question))
     }
 }
