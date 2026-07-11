@@ -8,9 +8,8 @@
 import SwiftUI
 
 struct HomeView: View {
-    @EnvironmentObject var engine: TestEngine
-
     @State private var isBreathing = false
+    @State private var showSafetyCheck = false
 
     var body: some View {
         NavigationStack {
@@ -29,11 +28,17 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .toolbar(.hidden, for: .navigationBar)
         }
+        .fullScreenCover(isPresented: $showSafetyCheck) {
+            NavigationStack {
+                SafetyCheckFlowView()
+                    .navigationTitle("Check-In")
+            }
+        }
     }
 
     private var startButton: some View {
         Button {
-            engine.startTest()
+            showSafetyCheck = true
         } label: {
             ZStack {
                 Circle()
@@ -79,5 +84,4 @@ private struct PressableStyle: ButtonStyle {
 
 #Preview {
     HomeView()
-        .environmentObject(TestEngine())
 }
