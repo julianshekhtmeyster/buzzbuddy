@@ -194,7 +194,10 @@ private struct MiddleTabButton: View {
 
 private struct QuizView: View {
     var body: some View {
-        Text("Quiz / Checklist")
+        NavigationStack {
+            SafetyCheckFlowView()
+                .navigationTitle("Check-In")
+        }
     }
 }
 
