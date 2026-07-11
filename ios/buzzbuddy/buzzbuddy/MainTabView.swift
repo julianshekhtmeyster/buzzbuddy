@@ -48,7 +48,7 @@ struct MainTabView: View {
                 case .contacts:
                     ContactsView()
                 case .quiz:
-                    QuizView()
+                    HomeView()
                 case .baseline:
                     BaselineView()
                 case .settings:
@@ -68,7 +68,7 @@ struct MainTabView: View {
         }
         .onPreferenceChange(TabBarHeightPreferenceKey.self) { height in
             tabBarHeight = height
-        }
+        }.ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
@@ -187,23 +187,6 @@ private struct MiddleTabButton: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Placeholder views (replace with your real ones)
-
-private struct QuizView: View {
-    var body: some View {
-        NavigationStack {
-            SafetyCheckFlowView()
-                .navigationTitle("Check-In")
-        }
-    }
-}
-
-private struct BaselineView: View {
-    var body: some View {
-        Text("Baseline")
     }
 }
 

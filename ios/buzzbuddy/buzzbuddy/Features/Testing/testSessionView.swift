@@ -27,12 +27,14 @@ struct TestSessionView: View {
             else {
 
                 Text("Test Complete")
+                
 
             }
 
            
 
         }
+
 
 
     }

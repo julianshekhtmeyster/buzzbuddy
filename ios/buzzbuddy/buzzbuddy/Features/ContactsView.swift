@@ -10,7 +10,7 @@ import Contacts
 
 // MARK: - Model
 
-struct Contact: Identifiable, Hashable {
+struct Contact: Identifiable, Hashable, Codable {
     let id: String
     let name: String
     let phoneNumber: String?   // stored for later use, never displayed
@@ -21,7 +21,6 @@ struct Contact: Identifiable, Hashable {
 
 @MainActor
 final class ContactsViewModel: ObservableObject {
-    @Published private(set) var activeContacts: [Contact] = []
     @Published private(set) var availableContacts: [Contact] = []
     @Published private(set) var authorizationStatus: CNAuthorizationStatus =
         CNContactStore.authorizationStatus(for: .contacts)
@@ -99,6 +98,20 @@ final class ContactsViewModel: ObservableObject {
 
 struct ContactsView: View {
     @StateObject private var viewModel = ContactsViewModel()
+    @StateObject private var eventStore = EventStore.shared
+
+    /// Contact IDs currently attached to a saved event.
+    private var activeContactIDs: Set<String> {
+        Set(eventStore.events.compactMap { $0.contact?.id })
+    }
+
+    private var activeContacts: [Contact] {
+        viewModel.availableContacts.filter { activeContactIDs.contains($0.id) }
+    }
+
+    private var availableContacts: [Contact] {
+        viewModel.availableContacts.filter { !activeContactIDs.contains($0.id) }
+    }
 
     var body: some View {
         NavigationStack {
@@ -130,13 +143,13 @@ struct ContactsView: View {
             VStack(alignment: .leading, spacing: 28) {
                 sectionCard(
                     title: "Active",
-                    contacts: viewModel.activeContacts,
+                    contacts: activeContacts,
                     isActive: true,
                     emptyText: "No active contacts yet"
                 )
                 sectionCard(
                     title: "Available",
-                    contacts: viewModel.availableContacts,
+                    contacts: availableContacts,
                     isActive: false,
                     emptyText: "No contacts found"
                 )
