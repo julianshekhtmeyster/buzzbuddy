@@ -37,9 +37,9 @@ struct VerdictView: View {
 
     private func title(for status: String) -> String {
         switch status {
-        case "clear": return "Clear"
-        case "mild": return "Mildly Impaired"
-        case "severe": return "Severely Impaired"
+        case "CLEAR": return "Clear"
+        case "MILDLY_IMPAIRED": return "Mildly Impaired"
+        case "SEVERELY_IMPAIRED": return "Severely Impaired"
         default: return status
         }
     }

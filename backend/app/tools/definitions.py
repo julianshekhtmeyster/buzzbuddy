@@ -55,7 +55,7 @@ TOOLS = [
                     },
                     "level": {
                         "type": "string",
-                        "enum": ["clear", "mild", "severe"],
+                        "enum": ["CLEAR", "MILDLY_IMPAIRED", "SEVERELY_IMPAIRED"],
                     },
                     "reasoning": {
                         "type": "string",
