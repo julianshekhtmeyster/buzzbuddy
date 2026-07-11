@@ -18,43 +18,70 @@ struct BaselineView: View {
     @State private var showGyroBaselineTest = false
     @State private var showMemoryBaselineTest = false
 
+    // Locally captured values not yet confirmed to exist server-side --
+    // only used during first-ever capture, when the backend requires all
+    // three fields in a single call (its Baseline row can't be created
+    // partially, since the columns are non-nullable). Once a baseline
+    // exists server-side, edits submit immediately as independent partial
+    // updates (retests).
+    @State private var pendingReactionMs: Double?
+    @State private var pendingGyroScore: Double?
+    @State private var pendingMemoryPercent: Double?
+
+    private var hasServerBaseline: Bool {
+        appState.reactionBaselineMs != nil
+            || appState.gyroBaselineScore != nil
+            || appState.memoryBaselinePercent != nil
+    }
+
+    private var displayedReactionMs: Double? { appState.reactionBaselineMs ?? pendingReactionMs }
+    private var displayedGyroScore: Double? { appState.gyroBaselineScore ?? pendingGyroScore }
+    private var displayedMemoryPercent: Double? { appState.memoryBaselinePercent ?? pendingMemoryPercent }
+
     var body: some View {
         NavigationStack {
             Form {
                 Section("Reaction") {
-                    if let ms = appState.reactionBaselineMs {
+                    if let ms = displayedReactionMs {
                         Text("\(Int(ms)) ms")
                     } else {
                         Text("Not set").foregroundStyle(.secondary)
                     }
-                    Button(appState.reactionBaselineMs == nil ? "Run test" : "Retest") {
+                    Button(displayedReactionMs == nil ? "Run test" : "Retest") {
                         showReactionBaselineTest = true
                     }
                     .disabled(appState.isLoading)
                 }
 
                 Section("Balance") {
-                    if let score = appState.gyroBaselineScore {
+                    if let score = displayedGyroScore {
                         Text(String(format: "%.2f", score))
                     } else {
                         Text("Not set").foregroundStyle(.secondary)
                     }
-                    Button(appState.gyroBaselineScore == nil ? "Run test" : "Retest") {
+                    Button(displayedGyroScore == nil ? "Run test" : "Retest") {
                         showGyroBaselineTest = true
                     }
                     .disabled(appState.isLoading)
                 }
 
                 Section("Memory") {
-                    if let percent = appState.memoryBaselinePercent {
+                    if let percent = displayedMemoryPercent {
                         Text("\(Int(percent))% accurate")
                     } else {
                         Text("Not set").foregroundStyle(.secondary)
                     }
-                    Button(appState.memoryBaselinePercent == nil ? "Run test" : "Retest") {
+                    Button(displayedMemoryPercent == nil ? "Run test" : "Retest") {
                         showMemoryBaselineTest = true
                     }
                     .disabled(appState.isLoading)
+                }
+
+                if !hasServerBaseline
+                    && (pendingReactionMs != nil || pendingGyroScore != nil || pendingMemoryPercent != nil) {
+                    Text("All three are needed before your baseline is saved.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
 
                 if let error = appState.baselineErrorMessage {
@@ -66,20 +93,54 @@ struct BaselineView: View {
         .sheet(isPresented: $showReactionBaselineTest) {
             ReactionTestView { ms in
                 showReactionBaselineTest = false
-                Task { await appState.updateBaseline(reactionBaselineMs: ms) }
+                capture(reactionMs: ms)
             }
         }
         .sheet(isPresented: $showGyroBaselineTest) {
             GyroBalanceTestView { score in
                 showGyroBaselineTest = false
-                Task { await appState.updateBaseline(gyroBaselineScore: score) }
+                capture(gyroScore: score)
             }
         }
         .sheet(isPresented: $showMemoryBaselineTest) {
             MemoryBaselineTestView { percent in
                 showMemoryBaselineTest = false
-                Task { await appState.updateBaseline(memoryBaselinePercent: percent) }
+                capture(memoryPercent: percent)
             }
+        }
+    }
+
+    /// Retests (a baseline already exists server-side) submit immediately
+    /// as a partial update. First-ever captures accumulate locally and
+    /// only submit once all three are present, since the backend can't
+    /// create a partial Baseline row.
+    private func capture(reactionMs: Double? = nil, gyroScore: Double? = nil, memoryPercent: Double? = nil) {
+        if hasServerBaseline {
+            Task {
+                await appState.updateBaseline(
+                    reactionBaselineMs: reactionMs,
+                    gyroBaselineScore: gyroScore,
+                    memoryBaselinePercent: memoryPercent
+                )
+            }
+            return
+        }
+
+        if let reactionMs { pendingReactionMs = reactionMs }
+        if let gyroScore { pendingGyroScore = gyroScore }
+        if let memoryPercent { pendingMemoryPercent = memoryPercent }
+
+        guard let reaction = pendingReactionMs,
+              let gyro = pendingGyroScore,
+              let memory = pendingMemoryPercent
+        else { return }
+
+        Task {
+            await appState.updateBaseline(
+                reactionBaselineMs: reaction,
+                gyroBaselineScore: gyro,
+                memoryBaselinePercent: memory
+            )
         }
     }
 }
