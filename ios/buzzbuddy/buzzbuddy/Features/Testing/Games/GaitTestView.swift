@@ -46,7 +46,7 @@ struct GaitTestView: View {
 
             else if isRecording {
 
-                Text("Walk Forward 10 Steps")
+                Text("Walk Forward Until Done")
                     .font(.title)
 
                 Text("Hold your phone firmly against your chest")
@@ -68,7 +68,7 @@ struct GaitTestView: View {
                 Text("""
                 Hold your phone firmly against your chest.
 
-                Walk forward naturally for 10 seconds.
+                Walk forward naturally until done.
                 """)
                 .multilineTextAlignment(.center)
 
