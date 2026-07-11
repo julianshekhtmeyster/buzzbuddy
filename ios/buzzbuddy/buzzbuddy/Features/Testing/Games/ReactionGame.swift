@@ -9,7 +9,12 @@ import SwiftUI
 
 struct ReactionGame: View {
     @EnvironmentObject var engine: TestEngine
-    
+
+    /// When set, the finished score is reported here instead of to
+    /// `TestEngine` -- lets an AI-requested test (SafetyCheckFlowView) drive
+    /// this same game UI without going through the local game shuffle.
+    var onComplete: ((Int) -> Void)? = nil
+
     @State private var boxColor: Color = .gray
     @State private var boxText = "Press Start"
     
@@ -164,14 +169,16 @@ struct ReactionGame: View {
         measuring = false
         
         let average = reactionTimes.reduce(0, +) / max(reactionTimes.count, 1)
-        
-        
-        engine.completeGame(
-            gameType: "ReactionTime",
-            gameScore: average
-        )
-        
-        
+
+        if let onComplete {
+            onComplete(average)
+        } else {
+            engine.completeGame(
+                gameType: "ReactionTime",
+                gameScore: average
+            )
+        }
+
         boxColor = .blue
         boxText = "\(average) ms"
     }

@@ -54,16 +54,16 @@ private struct TestPromptView: View {
 
             switch TestKind(pendingTest: pendingTest) {
             case .reaction:
-                ReactionTestView { ms in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: ms) }
+                ReactionGame { ms in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(ms)) }
                 }
             case .balance:
                 GyroBalanceTestView { variance in
                     Task { await appState.submitTestResult(testType: pendingTest, rawValue: variance) }
                 }
             case .memory:
-                MemoryRecallTestView { accuracy in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: accuracy) }
+                MemoryGame { accuracy in
+                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(accuracy)) }
                 }
             case .unknown:
                 UnsupportedTestView(pendingTest: pendingTest)

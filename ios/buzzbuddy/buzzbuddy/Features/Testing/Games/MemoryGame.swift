@@ -9,7 +9,12 @@ import SwiftUI
 
 struct MemoryGame: View {
     @EnvironmentObject var engine: TestEngine
-    
+
+    /// When set, the finished score is reported here instead of to
+    /// `TestEngine` -- lets an AI-requested test (SafetyCheckFlowView) drive
+    /// this same game UI without going through the local game shuffle.
+    var onComplete: ((Int) -> Void)? = nil
+
     @State private var gridSize = 3
     
     @State private var pattern: Set<Int> = []
@@ -185,12 +190,16 @@ struct MemoryGame: View {
             : 0
         
         let accuracyScore = Int(accuracy.rounded())
-        
-        engine.completeGame(
-            gameType: "Memory",
-            gameScore: accuracyScore
-        )
-        
+
+        if let onComplete {
+            onComplete(accuracyScore)
+        } else {
+            engine.completeGame(
+                gameType: "Memory",
+                gameScore: accuracyScore
+            )
+        }
+
         message = "Finished! Accuracy: \(accuracyScore)%"
         
         gameStarted = false
