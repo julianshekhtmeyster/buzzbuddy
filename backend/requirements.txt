@@ -9,3 +9,5 @@ pydantic-settings
 openai
 python-dotenv
 twilio
+httpx[http2]
+PyJWT[crypto]

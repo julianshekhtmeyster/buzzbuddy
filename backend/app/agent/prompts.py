@@ -23,7 +23,9 @@ Prefer requesting a *different* test type to get orthogonal data, unless you sus
 the earlier result was a sensor error.
 5. FINALIZE:
    - If confidence of SEVERELY_IMPAIRED clearly crosses ~80%, you MUST call 
-   `notify_contact`. This alerts a friend and shares location—it is a serious action. 
+   `notify_contact`. This alerts the trusted contact selected for the event and
+   shares location when available—it is a serious action. The server supplies the
+   alert copy; call the tool with an empty object.
    Do not call it on borderline or single-test evidence.
    - If the user is CLEAR or MILDLY_IMPAIRED after reasonable testing (usually 1-3 
    tests), output a final plain-language summary to the user without calling any 

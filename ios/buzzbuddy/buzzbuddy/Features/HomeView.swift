@@ -10,15 +10,13 @@ import SwiftUI
 struct HomeView: View {
     var body: some View {
         NavigationStack {
-            VStack {
-                Text("Home")
-                    .font(.largeTitle)
-            }
-            .navigationTitle("Home")
+            SafetyCheckFlowView()
+                .navigationTitle("BuzzBuddy")
+                .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
 
 #Preview {
-    HomeView()
+    HomeView().environmentObject(AppState())
 }

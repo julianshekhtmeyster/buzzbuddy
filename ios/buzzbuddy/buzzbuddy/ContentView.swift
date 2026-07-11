@@ -8,11 +8,19 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var pushNotifications: PushNotificationManager
+
     var body: some View {
         MainTabView()
+            .sheet(item: $pushNotifications.activeAlert) { alert in
+                IncomingSafetyAlertView(alert: alert)
+            }
     }
 }
 
 #Preview {
     ContentView()
+        .environmentObject(AppState())
+        .environmentObject(TrustedContactStore())
+        .environmentObject(PushNotificationManager.shared)
 }

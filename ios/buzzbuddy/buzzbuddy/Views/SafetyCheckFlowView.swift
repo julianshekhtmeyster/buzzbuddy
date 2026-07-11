@@ -3,7 +3,7 @@ import SwiftUI
 /// The full BuzzBuddy safety-check flow: baseline setup, starting an event,
 /// taking whichever test the AI examiner requests, and the final verdict.
 struct SafetyCheckFlowView: View {
-    @StateObject private var appState = AppState()
+    @EnvironmentObject private var appState: AppState
 
     var body: some View {
         Group {
@@ -21,8 +21,11 @@ struct SafetyCheckFlowView: View {
                         GyroBalanceTestView { score in
                             Task { await appState.submitTestResult(testType: pendingTest, rawValue: score) }
                         }
+                    } else if pendingTest == "memory" {
+                        MemoryRecallTestView { accuracy in
+                            Task { await appState.submitTestResult(testType: "memory", rawValue: accuracy) }
+                        }
                     } else {
-                        // "reaction", and "memory" until a dedicated memory test exists.
                         ReactionTestView { ms in
                             Task { await appState.submitTestResult(testType: "reaction", rawValue: ms) }
                         }
@@ -32,10 +35,9 @@ struct SafetyCheckFlowView: View {
                 VerdictView()
             }
         }
-        .environmentObject(appState)
     }
 }
 
 #Preview {
-    SafetyCheckFlowView()
+    SafetyCheckFlowView().environmentObject(AppState())
 }

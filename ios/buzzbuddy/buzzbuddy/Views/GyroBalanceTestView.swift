@@ -1,19 +1,20 @@
 import CoreMotion
 import SwiftUI
 
-/// Runs a single balance trial: hold the phone steady for 5 seconds while we
-/// sample the gyroscope, then report a stability score (higher = steadier).
+/// Runs a balance trial while sampling the gyroscope, then reports the
+/// variance of the rotation-rate magnitude.
 /// Reused both to capture the sober baseline and for each AI-requested test.
 struct GyroBalanceTestView: View {
     var onComplete: (Double) -> Void
 
-    private static let duration: Double = 5.0
+    private static let duration = TestEngine.Gyro.holdDuration
 
     @State private var motionManager = CMMotionManager()
     @State private var samples: [Double] = []
     @State private var timeRemaining: Double = GyroBalanceTestView.duration
     @State private var isRunning = false
     @State private var timer: Timer?
+    @State private var errorMessage: String?
 
     var body: some View {
         VStack(spacing: 24) {
@@ -36,27 +37,37 @@ struct GyroBalanceTestView: View {
                 Button("Start Balance Test") { start() }
                     .buttonStyle(.borderedProminent)
             }
+
+            if let errorMessage {
+                Text(errorMessage)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding()
         .onDisappear { stop() }
     }
 
     private func start() {
-        guard motionManager.isDeviceMotionAvailable else {
-            // No motion hardware (e.g. some Simulator configs) — report a
-            // neutral score rather than blocking the flow.
-            onComplete(1.0)
+        guard motionManager.isGyroAvailable else {
+            errorMessage = "Gyroscope data is unavailable on this device. Please try on an iPhone."
             return
         }
 
+        errorMessage = nil
         samples = []
         timeRemaining = Self.duration
         isRunning = true
 
-        motionManager.deviceMotionUpdateInterval = 0.05
-        motionManager.startDeviceMotionUpdates(to: .main) { motion, _ in
-            guard let motion else { return }
-            let rate = motion.rotationRate
+        motionManager.gyroUpdateInterval = TestEngine.Gyro.sampleInterval
+        motionManager.startGyroUpdates(to: .main) { data, error in
+            if let error {
+                errorMessage = "Motion sampling stopped: \(error.localizedDescription)"
+                stop()
+                return
+            }
+            guard let rate = data?.rotationRate else { return }
             samples.append(sqrt(rate.x * rate.x + rate.y * rate.y + rate.z * rate.z))
         }
 
@@ -69,25 +80,21 @@ struct GyroBalanceTestView: View {
     }
 
     private func finish() {
-        let score = stabilityScore(from: samples)
         stop()
-        onComplete(score)
+        guard let variance = TestEngine.Gyro.rotationRateVariance(from: samples) else {
+            errorMessage = "No motion samples were captured. Please try again."
+            return
+        }
+        onComplete(variance)
     }
 
     private func stop() {
-        motionManager.stopDeviceMotionUpdates()
+        motionManager.stopGyroUpdates()
         timer?.invalidate()
         timer = nil
         isRunning = false
     }
 
-    /// Higher = steadier. Converts average rotation-rate magnitude (wobble)
-    /// into a bounded score comparable across baseline and live tests.
-    private func stabilityScore(from samples: [Double]) -> Double {
-        guard !samples.isEmpty else { return 1.0 }
-        let avgWobble = samples.reduce(0, +) / Double(samples.count)
-        return 1.0 / (1.0 + avgWobble * 10)
-    }
 }
 
 #Preview {

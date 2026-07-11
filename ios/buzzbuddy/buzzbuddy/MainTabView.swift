@@ -39,5 +39,7 @@ struct MainTabView: View {
 
 #Preview {
     MainTabView()
+        .environmentObject(AppState())
+        .environmentObject(TrustedContactStore())
+        .environmentObject(PushNotificationManager.shared)
 }
-

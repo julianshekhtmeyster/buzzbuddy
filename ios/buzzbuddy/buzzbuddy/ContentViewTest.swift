@@ -35,6 +35,15 @@ struct ContentViewTest: View {
                                 )
                             }
                         }
+                    } else if pendingTest == "memory" {
+                        MemoryRecallTestView { accuracy in
+                            Task {
+                                await appState.submitTestResult(
+                                    testType: "memory",
+                                    rawValue: accuracy
+                                )
+                            }
+                        }
                     } else {
                         ReactionTestView { ms in
                             Task {

@@ -8,10 +8,13 @@ struct OnboardingView: View {
     @State private var heightIn = ""
     @State private var ddName = ""
     @State private var ddPhone = ""
+    @State private var showContactPicker = false
     @State private var showReactionBaselineTest = false
     @State private var reactionBaselineMs: Double?
     @State private var showGyroBaselineTest = false
     @State private var gyroBaselineScore: Double?
+    @State private var showMemoryBaselineTest = false
+    @State private var memoryBaselineScore: Double?
 
     var body: some View {
         Form {
@@ -24,9 +27,21 @@ struct OnboardingView: View {
             }
 
             Section("Designated driver") {
+                Button {
+                    showContactPicker = true
+                } label: {
+                    Label("Choose from Contacts", systemImage: "person.crop.circle.badge.plus")
+                }
                 TextField("Name", text: $ddName)
-                TextField("Phone", text: $ddPhone)
+                    .textContentType(.name)
+                TextField("Phone with country code", text: $ddPhone)
                     .keyboardType(.phonePad)
+                    .textContentType(.telephoneNumber)
+                if !ddPhone.isEmpty && !PhoneNumberNormalizer.isValid(ddPhone) {
+                    Text("Include a valid country code, such as +1 415 555 0123.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
 
             Section("Sober baseline") {
@@ -37,9 +52,15 @@ struct OnboardingView: View {
                 }
 
                 if let score = gyroBaselineScore {
-                    Text("Balance baseline: \(String(format: "%.2f", score))")
+                    Text("Balance baseline variance: \(String(format: "%.4f", score))")
                 } else {
                     Button("Run balance baseline test") { showGyroBaselineTest = true }
+                }
+
+                if let score = memoryBaselineScore {
+                    Text("Memory baseline: \(Int(score.rounded()))%")
+                } else {
+                    Button("Run memory baseline test") { showMemoryBaselineTest = true }
                 }
             }
 
@@ -64,20 +85,38 @@ struct OnboardingView: View {
                 showGyroBaselineTest = false
             }
         }
+        .sheet(isPresented: $showMemoryBaselineTest) {
+            MemoryRecallTestView { score in
+                memoryBaselineScore = score
+                showMemoryBaselineTest = false
+            }
+        }
+        .sheet(isPresented: $showContactPicker) {
+            ContactPickerView { contactName, phoneNumber in
+                ddName = contactName
+                ddPhone = phoneNumber
+                showContactPicker = false
+            } onCancel: {
+                showContactPicker = false
+            }
+        }
     }
 
     private var canSubmit: Bool {
         reactionBaselineMs != nil
             && gyroBaselineScore != nil
+            && memoryBaselineScore != nil
             && !name.isEmpty
             && Double(weightLbs) != nil
             && Double(heightIn) != nil
-            && !ddName.isEmpty
+            && !ddName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && PhoneNumberNormalizer.isValid(ddPhone)
     }
 
     private func submit() {
         guard let ms = reactionBaselineMs,
               let gyroScore = gyroBaselineScore,
+              let memoryScore = memoryBaselineScore,
               let weightLbs = Double(weightLbs),
               let heightIn = Double(heightIn) else { return }
 
@@ -93,8 +132,9 @@ struct OnboardingView: View {
                 bmi: bmi,
                 reactionBaselineMs: ms,
                 gyroBaselineScore: gyroScore,
-                ddName: ddName,
-                ddPhone: ddPhone
+                memoryBaselineScore: memoryScore,
+                ddName: ddName.trimmingCharacters(in: .whitespacesAndNewlines),
+                ddPhone: PhoneNumberNormalizer.normalized(ddPhone)
             )
         }
     }
