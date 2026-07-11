@@ -8,23 +8,29 @@
 import SwiftUI
 
 struct ContentView: View {
-    @EnvironmentObject var appState: AppState
+    @EnvironmentObject var engine: TestEngine
 
     var body: some View {
-        Group {
-            switch appState.phase {
-            case .onboarding:
-                OnboardingView()
-            case .baselineUpgrade:
-                BaselineUpgradeView()
-            default:
-                MainTabView()
+        MainTabView()
+        .fullScreenCover(isPresented: $engine.showingTest) {
+            TestSessionView()
+                    
             }
-        }
-        .task { await appState.bootstrap() }
+            .onChange(of: engine.finished){
+                print("engine.finished changed ??? This probably means that the test finnished twin")
+
+                if engine.finished && !engine.doForm{
+                    engine.showingTest = false
+                }
+            }
+            .onAppear {
+                print("init test ????")
+                engine.startTest(doFormA:true)
+            }
     }
+
 }
 
 #Preview {
-    ContentView().environmentObject(AppState())
+    ContentView()
 }

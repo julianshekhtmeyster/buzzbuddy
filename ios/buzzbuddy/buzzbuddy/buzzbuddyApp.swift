@@ -8,6 +8,24 @@
 import SwiftUI
 
 
+final class AppSettings: ObservableObject {
+    
+    //  General
+    
+    @Published var enableAutoCallContact = true
+    @Published var soundEffects = true
+    
+    //  Biometrics
+    
+    //kg and cms
+    
+    @Published var weight = 77
+    @Published var height = 185
+    
+}
+
+
+
 struct Game: Identifiable {
     let id = UUID()
 
@@ -30,9 +48,9 @@ struct GameLibrary {
         ),
 
         Game(
-            name: "Balance",
+            name: "GoNoGo",
             view: AnyView(
-                BalanceGame()
+                GoNoGoGame()
             )
         ),
         Game(
@@ -46,68 +64,88 @@ struct GameLibrary {
 // LIST OF GAMES
 }
 
+
 class TestEngine: ObservableObject {
 
     @Published var selectedGames: [Game] = []
-
     @Published var currentIndex = 0
 
-    
+    @Published var doForm = false
+    @Published var isBaseline = false
+    @Published var showingTest = false
+
     var currentGame: Game? {
+        guard currentIndex < selectedGames.count else {
+            return nil
+        }
 
-        guard currentIndex < GameLibrary.games.count else {
-               return nil
-           }
-
-        return GameLibrary.games[currentIndex]
+        return selectedGames[currentIndex]
     }
 
+    func startTest(
+        numberOfGames: Int = 3,
+        isBaselineA: Bool = false,
+        doFormA: Bool = false
+    ) {
 
-    func startTest(numberOfGames: Int = 3) {
+        showingTest = true
 
         selectedGames = Array(
-        GameLibrary.games.shuffled()
+            GameLibrary.games
+                .shuffled()
                 .prefix(numberOfGames)
         )
 
         currentIndex = 0
+        isBaseline = isBaselineA
+        doForm = doFormA
     }
-    
 
-    func nextGame() {
+    func completeGame(gameType: String, gameScore: Int) {
+
+        print(gameType)
+        print(gameScore)
 
         currentIndex += 1
-        print(currentIndex)
-        print(selectedGames.count )
-
     }
 
+    func finishForm() {
+        finishTest()
+    }
+
+    func finishTest() {
+        showingTest = false
+        isBaseline = false
+        doForm = false
+        currentIndex = 0
+    }
+
+    var showingForm: Bool {
+        finished && doForm
+    }
 
     var finished: Bool {
-
-        currentIndex >= selectedGames.count        
-
+        currentIndex >= selectedGames.count
     }
-    
-
-
 }
 
 
 
 @main
 struct BuzzBuddyApp: App {
-    @StateObject private var appState = AppState()
-
+    @StateObject var engine = TestEngine()
+    @StateObject var settings = AppSettings()
     var body: some Scene {
 
-        @StateObject var engine = TestEngine()
+
 
         WindowGroup {
-        
             ContentView()
                 .environmentObject(engine)
-                .environmentObject(appState)
+                .environmentObject(settings)
+
+            
         }
+
     }
 }

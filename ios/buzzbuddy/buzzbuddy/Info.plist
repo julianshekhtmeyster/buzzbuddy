@@ -2,15 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BuzzBuddyAPIBaseURL</key>
+	<string>https://orca-app-x5g3f.ondigitalocean.app</string>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-	<!-- Optional backend override, e.g. a deployed DO App Platform URL.
-	     Leave blank to use the BUZZBUDDY_API_BASE_URL scheme environment
-	     variable, or (Debug only) http://127.0.0.1:8000. -->
-	<key>BuzzBuddyAPIBaseURL</key>
-	<string>https://orca-app-x5g3f.ondigitalocean.app</string>
 </dict>
 </plist>

@@ -9,11 +9,18 @@
 import SwiftUI
 
 struct BaselineView: View {
+    
+    @EnvironmentObject var engine: TestEngine
+
+    
     var body: some View {
         NavigationStack {
-            Text("baseline")
-                .font(.largeTitle)
-                .navigationTitle("baseline")
+            VStack {
+                Button("Update Baseline") {
+                    engine.startTest()
+                }
+            }
+
         }
     }
 }

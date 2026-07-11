@@ -15,15 +15,15 @@ struct surveyForm: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("About Today") {
+                Section("TITLE") {
 
                     Toggle(
-                        "Did you drink today?",
+                        "QUESTION TOGGLE TEMPLATE",
                         isOn: $drankAlcohol
                     )
 
                     Stepper(
-                        "Hours slept: \(hoursSlept)",
+                        "STEPPER TEMPLATE: \(hoursSlept)",
                         value: $hoursSlept,
                         in: 0...24
                     )
