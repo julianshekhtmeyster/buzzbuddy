@@ -86,8 +86,14 @@ def submit_test_result(session_id: str, payload: TestResultIn, db: DBSession = D
     session = db.get(AgentSession, session_id)
     if session is None:
         raise HTTPException(status_code=404, detail="session not found")
-    if session.status not in ("in_progress",):
-        raise HTTPException(status_code=400, detail=f"session already concluded as '{session.status}'")
+    # `status` (clear/mild/severe) is the AI's evolving confidence label, not a
+    # lifecycle flag — it can say "severe" while still wanting a cross-check
+    # test before concluding. The session is actually over only once the DD
+    # has been notified, or the AI stopped requesting further tests.
+    if session.notified:
+        raise HTTPException(status_code=400, detail="session already concluded: designated driver was notified")
+    if session.pending_test is None:
+        raise HTTPException(status_code=400, detail="session already concluded: no further test was requested")
 
     db.add(TestResult(session_id=session.id, test_type=payload.test_type, raw_value=payload.raw_value))
     session.pending_test = None

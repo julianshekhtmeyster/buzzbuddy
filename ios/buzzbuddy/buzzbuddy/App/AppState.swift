@@ -86,10 +86,15 @@ final class AppState: ObservableObject {
     }
 
     private func advance(from session: SessionOut) {
-        if session.status != "in_progress" {
+        // `status` (clear/mild/severe) is the AI's evolving confidence label,
+        // not a lifecycle flag — it can say "severe" while still wanting a
+        // cross-check test before concluding. The session is actually over
+        // only once the DD has been notified, or the AI stopped requesting
+        // further tests.
+        if session.notified || session.pendingTest == nil {
             phase = .verdict
         } else {
-            phase = .takingTest(pendingTest: session.pendingTest ?? "reaction")
+            phase = .takingTest(pendingTest: session.pendingTest!)
         }
     }
 }
