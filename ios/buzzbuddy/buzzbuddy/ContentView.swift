@@ -38,6 +38,9 @@ struct ContentView: View {
             }
         }
         .environmentObject(appState)
+=======
+        MainTabView()
+>>>>>>> cb9727b (feat: tabs and pages)
     }
 }
 
