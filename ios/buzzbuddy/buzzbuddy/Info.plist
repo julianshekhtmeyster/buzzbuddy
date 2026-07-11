@@ -11,6 +11,6 @@
 	     Leave blank to use the BUZZBUDDY_API_BASE_URL scheme environment
 	     variable, or (Debug only) http://127.0.0.1:8000. -->
 	<key>BuzzBuddyAPIBaseURL</key>
-	<string></string>
+	<string>https://orca-app-x5g3f.ondigitalocean.app</string>
 </dict>
 </plist>
