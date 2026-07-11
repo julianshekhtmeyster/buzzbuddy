@@ -18,7 +18,13 @@ struct GyroBalanceTestView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text(isRunning ? "Hold your phone as steady as possible" : "Ready to test your balance")
+                .font(.title)
+                .fontWeight(.bold)
+                .multilineTextAlignment(.center)
+
+            Text("Stand on one leg to balance")
                 .font(.title3)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
             ZStack {
@@ -28,13 +34,18 @@ struct GyroBalanceTestView: View {
                     .stroke(isRunning ? Color.blue : Color.gray, lineWidth: 8)
                     .rotationEffect(.degrees(-90))
                 Text(String(format: "%.1f", timeRemaining))
-                    .font(.system(size: 40, weight: .bold))
+                    .font(.system(size: 48, weight: .bold))
             }
             .frame(width: 160, height: 160)
 
             if !isRunning {
                 Button("Start Balance Test") { start() }
+                    .font(.title2)
+                    .fontWeight(.semibold)
                     .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
             }
         }
         .padding()
