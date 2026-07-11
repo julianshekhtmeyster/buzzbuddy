@@ -211,21 +211,25 @@ final class AppState: ObservableObject {
                     longitude: coordinate?.longitude
                 )
             )
-            let gainedReasoning = updated.reasoningLog.count > session.reasoningLog.count
             self.session = updated
             persistence.sessionId = updated.id
             errorMessage = nil
-            if gainedReasoning {
-                // Hold on .reviewingTest briefly so its AI-reasoning dropdown
-                // can reveal the newly arrived line(s) before the phase
-                // advances out from under it.
-                try? await Task.sleep(nanoseconds: 900_000_000)
-            }
-            advance(from: updated)
+            // Deliberately stay on .reviewingTest here rather than advancing --
+            // the view reveals the AI's reasoning for this round and waits for
+            // the user to tap Continue (see continueAfterReview()) instead of
+            // auto-advancing out from under them.
         } catch {
             errorMessage = error.localizedDescription
             phase = .submissionFailed(pendingTest: pendingTest, testType: testType, rawValue: rawValue)
         }
+    }
+
+    /// Called once the user has read this round's AI reasoning and taps
+    /// Continue on the .reviewingTest screen -- moves on to whatever
+    /// `advance(from:)` decides (next test, or verdict).
+    func continueAfterReview() {
+        guard case .reviewingTest = phase, let session else { return }
+        advance(from: session)
     }
 
     func retryRestore() async {

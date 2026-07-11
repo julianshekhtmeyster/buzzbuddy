@@ -3,7 +3,7 @@ from openai import OpenAIError
 from sqlalchemy.orm import Session as DBSession
 
 from ..agent.dd_companion import ask_dd_companion
-from ..agent.loop import run_agent_turn
+from ..agent.loop import AgentTurnStalledError, run_agent_turn
 from ..database import get_db
 from ..models import AgentSession, Baseline, DDContact, Event, TestResult, User
 from ..schemas import (
@@ -26,6 +26,8 @@ def _run_agent_turn_or_502(db: DBSession, session: AgentSession, message: str) -
         return run_agent_turn(db, session, message)
     except OpenAIError as e:
         raise HTTPException(status_code=502, detail=f"AI examiner call failed: {e}")
+    except AgentTurnStalledError as e:
+        raise HTTPException(status_code=502, detail=str(e))
 
 
 @router.post("/users", response_model=UserOut)

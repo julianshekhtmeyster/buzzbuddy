@@ -11,7 +11,7 @@ struct SafetyCheckFlowView: View {
     var body: some View {
         switch appState.phase {
         case .onboarding:
-            OnboardingView()
+            NeedsProfileView()
         case .restoring:
             ProgressView("Restoring your check-in...")
         case .restoreFailed:
@@ -42,106 +42,190 @@ private struct TestPromptView: View {
     let pendingTest: String
 
     var body: some View {
-        VStack(spacing: 8) {
-            Text("AI requested: \(pendingTest) test")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-
-            switch TestKind(pendingTest: pendingTest) {
-            case .reaction:
-                ReactionGame { ms in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(ms)) }
-                }
-            case .balance:
-                GyroBalanceTestView { variance in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: variance) }
-                }
-            case .memory:
-                MemoryGame { accuracy in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(accuracy)) }
-                }
-            case .gait:
-                GaitTestView { score in
-                    Task { await appState.submitTestResult(testType: pendingTest, rawValue: score) }
-                }
-            case .unknown:
-                UnsupportedTestView(pendingTest: pendingTest)
+        switch TestKind(pendingTest: pendingTest) {
+        case .reaction:
+            ReactionGame { ms in
+                Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(ms)) }
             }
+        case .balance:
+            GyroBalanceTestView { variance in
+                Task { await appState.submitTestResult(testType: pendingTest, rawValue: variance) }
+            }
+        case .memory:
+            MemoryGame { accuracy in
+                Task { await appState.submitTestResult(testType: pendingTest, rawValue: Double(accuracy)) }
+            }
+        case .gait:
+            GaitTestView { score in
+                Task { await appState.submitTestResult(testType: pendingTest, rawValue: score) }
+            }
+        case .unknown:
+            UnsupportedTestView(pendingTest: pendingTest)
         }
     }
 }
 
-/// Shown while `submitTestResult` is in flight. AppState briefly holds this
-/// phase after a fresh reasoning line arrives (see AppState.performSubmit)
-/// so the dropdown below has time to flip from placeholder to real content
-/// before the phase advances out from under it.
+/// Human-readable name for a `pendingTest`/`test_type` string, used on the
+/// Continue button so it says what's coming up next instead of just "Continue".
+private func testDisplayName(_ pendingTest: String) -> String {
+    switch TestKind(pendingTest: pendingTest) {
+    case .reaction: return "Reaction Test"
+    case .balance: return "Balance Test"
+    case .memory: return "Memory Test"
+    case .gait: return "Walking Test"
+    case .unknown: return "Next Test"
+    }
+}
+
+/// Shown while `submitTestResult` is in flight and after it resolves. Once
+/// the result is in, this deliberately does NOT auto-advance -- it reveals
+/// the AI's reasoning for this round word by word and waits for the user to
+/// tap the bottom button (AppState.continueAfterReview()) before moving to
+/// the next test or the verdict.
 private struct ReviewingTestView: View {
     @EnvironmentObject var appState: AppState
     let pendingTest: String
-    @State private var isExpanded = false
     @State private var baselineReasoningCount = 0
+    @State private var revealFinished = false
 
     private var newReasoningLines: [String] {
         guard let log = appState.session?.reasoningLog, log.count > baselineReasoningCount else { return [] }
         return Array(log.suffix(log.count - baselineReasoningCount))
     }
 
+    private var nextStepLabel: String {
+        guard let nextTest = appState.session?.pendingTest else { return "See Your Results" }
+        return "Continue to \(testDisplayName(nextTest))"
+    }
+
     var body: some View {
         VStack(spacing: 12) {
-            Text("AI requested: \(pendingTest) test")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            ProgressView("Reviewing your result...")
+            if appState.isLoading {
+                Spacer()
+                ProgressView("Reviewing your result...")
+                Spacer()
+            } else {
+                AIReasoningText(
+                    lines: newReasoningLines,
+                    onRevealFinished: { revealFinished = true }
+                )
+                .padding(.horizontal)
+                .padding(.top)
 
-            AIReasoningDropdown(lines: newReasoningLines, isExpanded: $isExpanded)
+                if !revealFinished {
+                    Spacer()
+                }
+
+                if revealFinished {
+                    Button {
+                        appState.continueAfterReview()
+                    } label: {
+                        Text(nextStepLabel)
+                            .font(.title3.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal)
+                    .padding(.bottom)
+                }
+            }
         }
-        .padding()
         .onAppear {
             baselineReasoningCount = appState.session?.reasoningLog.count ?? 0
         }
     }
 }
 
-/// Collapsed by default; tapping reveals `lines`, or a placeholder while
-/// the AI is still working (i.e. `lines` is still empty).
-private struct AIReasoningDropdown: View {
+/// Reveals `lines` word by word as they arrive (simulating the AI "thinking"
+/// live, even though the backend actually returns the full text in one
+/// shot), filling the space top to bottom with no background, icon, or
+/// label -- just the reasoning itself, at a single consistent size. Fully
+/// revealed lines stay visible. Calls `onRevealFinished` once every line
+/// has finished animating in.
+private struct AIReasoningText: View {
     let lines: [String]
-    @Binding var isExpanded: Bool
+    var onRevealFinished: () -> Void
+
+    @State private var revealedLineCount = 0
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Button {
-                withAnimation { isExpanded.toggle() }
-            } label: {
-                HStack {
-                    Image(systemName: "brain")
-                    Text("AI reasoning")
-                    Spacer()
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                }
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                if lines.isEmpty {
-                    Text("Analyzing your result…")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                } else {
-                    VStack(alignment: .leading, spacing: 6) {
-                        ForEach(lines, id: \.self) { line in
-                            Text("• \(line)").font(.footnote)
+        VStack(alignment: .leading, spacing: 12) {
+            if lines.isEmpty {
+                Text("Analyzing your result…")
+                    .foregroundStyle(.secondary)
+            } else {
+                ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                    if index < revealedLineCount {
+                        Text(line)
+                    } else if index == revealedLineCount {
+                        TypewriterLine(text: line) {
+                            revealedLineCount += 1
+                            if revealedLineCount == lines.count {
+                                onRevealFinished()
+                            }
                         }
                     }
                 }
             }
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(RoundedRectangle(cornerRadius: 10).fill(Color(.secondarySystemBackground)))
-        .padding(.horizontal)
+        .font(.body)
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .onAppear {
+            if lines.isEmpty { onRevealFinished() }
+        }
+    }
+}
+
+/// Reveals `text` a word at a time, then calls `onFinished` once the whole
+/// line is visible.
+private struct TypewriterLine: View {
+    let text: String
+    var onFinished: () -> Void
+
+    @State private var visibleWordCount = 0
+
+    private var words: [String] { text.split(separator: " ").map(String.init) }
+
+    var body: some View {
+        Text(words.prefix(visibleWordCount).joined(separator: " "))
+            .onAppear { revealNext() }
+    }
+
+    private func revealNext() {
+        guard visibleWordCount < words.count else {
+            onFinished()
+            return
+        }
+        visibleWordCount += 1
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
+            revealNext()
+        }
+    }
+}
+
+/// Profile setup (name/weight/height/DD contact) lives on the Baseline tab
+/// alongside sober test capture -- one page, not a form embedded here.
+private struct NeedsProfileView: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 12) {
+            Text("Set up your profile before starting a check-in.")
+                .font(.title3)
+                .multilineTextAlignment(.center)
+            Text("Your name, weight, height, and designated driver contact live on the Baseline tab, alongside your sober test results.")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            Button("Go to the Baseline tab") {
+                dismiss()
+            }
+            .buttonStyle(.borderedProminent)
+        }
+        .padding()
     }
 }
 
@@ -169,9 +253,6 @@ private struct SubmissionFailedView: View {
 
     var body: some View {
         VStack(spacing: 12) {
-            Text("AI requested: \(pendingTest) test")
-                .font(.caption)
-                .foregroundStyle(.secondary)
             Image(systemName: "wifi.exclamationmark")
                 .font(.largeTitle)
                 .foregroundStyle(.red)

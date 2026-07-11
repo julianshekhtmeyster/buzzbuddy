@@ -11,15 +11,11 @@ struct ContentView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Group {
-            switch appState.phase {
-            case .onboarding:
-                OnboardingView()
-            default:
-                MainTabView()
-            }
-        }
-        .task { await appState.bootstrap() }
+        // Onboarding is handled inside SafetyCheckFlowView (reached via the
+        // Check-In tab's Start Test button), not as a full-app gate here --
+        // every tab should stay reachable regardless of onboarding status.
+        MainTabView()
+            .task { await appState.bootstrap() }
     }
 }
 

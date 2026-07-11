@@ -90,6 +90,11 @@ class AgentSession(Base):
     confidence = Column(Float, default=0.0)
     pending_test = Column(String, nullable=True)  # test_type the AI wants next, or None
     reasoning_log = Column(JSON, default=list)  # human-readable trace for the UI/demo
+    # The AI's concluding plain-language summary (its final non-tool-call
+    # message), captured once it stops requesting tests. Distinct from
+    # reasoning_log, which is the per-round blow-by-blow -- this is the one
+    # compressed takeaway shown front-and-center on the verdict screen.
+    final_summary = Column(String, nullable=True)
     conversation = Column(JSON, default=list)  # full chat history incl. tool calls, for the loop
     notified = Column(Boolean, default=False)
     # Most recent known device location, updated alongside test-result submissions

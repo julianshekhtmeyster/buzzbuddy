@@ -74,6 +74,7 @@ private final class InMemoryPersistenceStore: PersistenceStore {
     var reactionBaselineMs: Double?
     var gyroBaselineScore: Double?
     var memoryBaselinePercent: Double?
+    var gaitBaselineScore: Double?
 }
 
 /// A fully-onboarded user with all three baselines already on file --

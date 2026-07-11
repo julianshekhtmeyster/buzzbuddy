@@ -2,6 +2,7 @@ import SwiftUI
 
 struct StartEventView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
     @State private var eventName = "Tonight"
 
     /// The backend rejects event creation with no baseline on file (there's
@@ -44,8 +45,12 @@ struct StartEventView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
 
-                NavigationLink("Go to Baseline") {
-                    BaselineView()
+                // Baseline setup lives on the Baseline tab underneath this
+                // full-screen check-in flow, not as a nested page here --
+                // pushing a second BaselineView instance inside this modal
+                // just duplicates that one true page and confuses navigation.
+                Button("Go to the Baseline tab") {
+                    dismiss()
                 }
                 .buttonStyle(.borderedProminent)
             }

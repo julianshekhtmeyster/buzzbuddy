@@ -73,6 +73,7 @@ class SessionOut(BaseModel):
     confidence: float
     pending_test: Optional[str]
     reasoning_log: list[str]
+    final_summary: Optional[str]
     notified: bool
 
     class Config:

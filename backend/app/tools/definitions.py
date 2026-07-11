@@ -60,9 +60,10 @@ TOOLS = [
                     "reasoning": {
                         "type": "string",
                         "description": (
-                            "Your chain of reasoning, e.g. 'Reaction time is 400ms "
-                            "slower than baseline, combined with a 20% stability "
-                            "drop, I am now 85% confident...'"
+                            "2-3 sentences MAXIMUM, shown directly to the user on "
+                            "their phone. E.g. 'Reaction time is 400ms slower than "
+                            "baseline and stability dropped 20% -- confidence of "
+                            "impairment is now 85%.' No filler or restated context."
                         ),
                     },
                 },

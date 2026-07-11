@@ -5,40 +5,53 @@ struct VerdictView: View {
     @State private var showDDCompanionPreview = false
 
     var body: some View {
-        VStack(spacing: 16) {
-            if let session = appState.session {
-                Text(title(for: session.status))
-                    .font(.largeTitle.bold())
+        ScrollView {
+            VStack(spacing: 16) {
+                if let session = appState.session {
+                    Text(title(for: session.status))
+                        .font(.largeTitle.bold())
 
-                Text("Confidence: \(Int(session.confidence * 100))%")
-                    .font(.headline)
+                    Text("Confidence: \(Int(session.confidence * 100))%")
+                        .font(.headline)
 
-                if session.notified {
-                    Text("Your designated driver has been notified.")
-                        .foregroundStyle(.orange)
+                    if session.notified {
+                        Text("Your designated driver has been notified.")
+                            .foregroundStyle(.orange)
 
-                    Button("Preview DD companion") {
-                        showDDCompanionPreview = true
-                    }
-                    .buttonStyle(.bordered)
-                }
-
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 8) {
-                        ForEach(session.reasoningLog, id: \.self) { line in
-                            Text("• \(line)").font(.footnote)
+                        Button("Preview DD companion") {
+                            showDDCompanionPreview = true
                         }
+                        .buttonStyle(.bordered)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
 
-                Text("BuzzBuddy does not estimate BAC and does not tell you whether it's legal for you to drive.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+                    // The one compressed takeaway, featured front-and-center --
+                    // distinct from the per-round trace below.
+                    if let summary = session.finalSummary, !summary.isEmpty {
+                        Text(summary)
+                            .font(.body)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal)
+                    }
+
+                    DisclosureGroup("Full reasoning") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(session.reasoningLog, id: \.self) { line in
+                                Text("• \(line)").font(.footnote)
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.top, 4)
+                    }
+                    .font(.subheadline)
+
+                    Text("BuzzBuddy does not estimate BAC and does not tell you whether it's legal for you to drive.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
+            .padding()
         }
-        .padding()
         .sheet(isPresented: $showDDCompanionPreview) {
             if let sessionId = appState.session?.id {
                 DDCompanionPreviewView(sessionId: sessionId)

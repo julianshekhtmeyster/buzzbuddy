@@ -67,6 +67,10 @@ struct SessionOut: Codable {
     var confidence: Double
     var pendingTest: String?
     var reasoningLog: [String]
+    /// The AI's concluding plain-language summary -- one compressed takeaway,
+    /// distinct from `reasoningLog`'s per-round trace. Featured on the
+    /// verdict screen; nil until the session actually concludes.
+    var finalSummary: String?
     var notified: Bool
 }
 
