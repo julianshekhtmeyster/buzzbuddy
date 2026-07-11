@@ -12,6 +12,8 @@ struct OnboardingView: View {
     @State private var reactionBaselineMs: Double?
     @State private var showGyroBaselineTest = false
     @State private var gyroBaselineScore: Double?
+    @State private var showMemoryBaselineTest = false
+    @State private var memoryBaselineScore: Double?
 
     var body: some View {
         Form {
@@ -41,6 +43,12 @@ struct OnboardingView: View {
                 } else {
                     Button("Run balance baseline test") { showGyroBaselineTest = true }
                 }
+
+                if let score = memoryBaselineScore {
+                    Text("Memory baseline: \(Int(score))% accurate")
+                } else {
+                    Button("Run memory baseline test") { showMemoryBaselineTest = true }
+                }
             }
 
             if let error = appState.errorMessage {
@@ -64,11 +72,18 @@ struct OnboardingView: View {
                 showGyroBaselineTest = false
             }
         }
+        .sheet(isPresented: $showMemoryBaselineTest) {
+            MemoryRecallTestView { accuracy in
+                memoryBaselineScore = accuracy
+                showMemoryBaselineTest = false
+            }
+        }
     }
 
     private var canSubmit: Bool {
         reactionBaselineMs != nil
             && gyroBaselineScore != nil
+            && memoryBaselineScore != nil
             && !name.isEmpty
             && Double(weightLbs) != nil
             && Double(heightIn) != nil
@@ -78,6 +93,7 @@ struct OnboardingView: View {
     private func submit() {
         guard let ms = reactionBaselineMs,
               let gyroScore = gyroBaselineScore,
+              let memoryScore = memoryBaselineScore,
               let weightLbs = Double(weightLbs),
               let heightIn = Double(heightIn) else { return }
 
@@ -93,6 +109,7 @@ struct OnboardingView: View {
                 bmi: bmi,
                 reactionBaselineMs: ms,
                 gyroBaselineScore: gyroScore,
+                memoryBaselineScore: memoryScore,
                 ddName: ddName,
                 ddPhone: ddPhone
             )

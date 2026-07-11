@@ -10,6 +10,7 @@ protocol PersistenceStore: AnyObject {
     var hasCompletedOnboarding: Bool { get set }
     var reactionBaselineMs: Double? { get set }
     var gyroBaselineScore: Double? { get set }
+    var memoryBaselineScore: Double? { get set }
 }
 
 final class UserDefaultsPersistenceStore: PersistenceStore {
@@ -20,6 +21,7 @@ final class UserDefaultsPersistenceStore: PersistenceStore {
         static let hasCompletedOnboarding = "buzzbuddy.hasCompletedOnboarding"
         static let reactionBaselineMs = "buzzbuddy.reactionBaselineMs"
         static let gyroBaselineScore = "buzzbuddy.gyroBaselineScore"
+        static let memoryBaselineScore = "buzzbuddy.memoryBaselineScore"
     }
 
     private let defaults: UserDefaults
@@ -56,5 +58,10 @@ final class UserDefaultsPersistenceStore: PersistenceStore {
     var gyroBaselineScore: Double? {
         get { defaults.object(forKey: Key.gyroBaselineScore) as? Double }
         set { defaults.set(newValue, forKey: Key.gyroBaselineScore) }
+    }
+
+    var memoryBaselineScore: Double? {
+        get { defaults.object(forKey: Key.memoryBaselineScore) as? Double }
+        set { defaults.set(newValue, forKey: Key.memoryBaselineScore) }
     }
 }

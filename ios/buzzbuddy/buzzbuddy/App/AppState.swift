@@ -40,6 +40,7 @@ final class AppState: ObservableObject {
     @Published var session: SessionOut?
     @Published private(set) var reactionBaselineMs: Double?
     @Published private(set) var gyroBaselineScore: Double?
+    @Published private(set) var memoryBaselineScore: Double?
 
     private let api: BuzzBuddyAPIProtocol
     private let persistence: PersistenceStore
@@ -59,6 +60,7 @@ final class AppState: ObservableObject {
         self.eventId = persistence.eventId
         self.reactionBaselineMs = persistence.reactionBaselineMs
         self.gyroBaselineScore = persistence.gyroBaselineScore
+        self.memoryBaselineScore = persistence.memoryBaselineScore
 
         if !persistence.hasCompletedOnboarding {
             self.phase = .onboarding
@@ -84,6 +86,7 @@ final class AppState: ObservableObject {
         bmi: Double,
         reactionBaselineMs: Double,
         gyroBaselineScore: Double,
+        memoryBaselineScore: Double,
         ddName: String,
         ddPhone: String
     ) async {
@@ -91,13 +94,10 @@ final class AppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
-            // Memory baseline is a placeholder until onboarding captures a
-            // real memory-recall baseline -- reaction and gyro/balance are
-            // both real now.
             let baseline = BaselineIn(
                 reactionTimeMs: reactionBaselineMs,
                 gyroStabilityScore: gyroBaselineScore,
-                memoryRecallScore: 1.0
+                memoryRecallScore: memoryBaselineScore
             )
             let contact = DDContactIn(name: ddName, phoneNumber: ddPhone, email: nil)
             let payload = UserCreate(
@@ -110,8 +110,10 @@ final class AppState: ObservableObject {
             persistence.hasCompletedOnboarding = true
             persistence.reactionBaselineMs = reactionBaselineMs
             persistence.gyroBaselineScore = gyroBaselineScore
+            persistence.memoryBaselineScore = memoryBaselineScore
             self.reactionBaselineMs = reactionBaselineMs
             self.gyroBaselineScore = gyroBaselineScore
+            self.memoryBaselineScore = memoryBaselineScore
             errorMessage = nil
             phase = .readyToStartEvent
         } catch {
