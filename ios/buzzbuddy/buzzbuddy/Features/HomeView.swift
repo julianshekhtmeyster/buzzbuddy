@@ -31,7 +31,7 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showSafetyCheck) {
             NavigationStack {
                 SafetyCheckFlowView()
-                    .navigationTitle("Check-In")
+                    .toolbar(.hidden, for: .navigationBar)
             }
         }
     }
