@@ -50,6 +50,8 @@ class EventOut(BaseModel):
 class TestResultIn(BaseModel):
     test_type: str
     raw_value: float
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 
 class SessionOut(BaseModel):

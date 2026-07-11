@@ -82,6 +82,10 @@ class AgentSession(Base):
     reasoning_log = Column(JSON, default=list)  # human-readable trace for the UI/demo
     conversation = Column(JSON, default=list)  # full chat history incl. tool calls, for the loop
     notified = Column(Boolean, default=False)
+    # Most recent known device location, updated alongside test-result submissions
+    # so it's available if the AI escalates to notify_contact within the same turn.
+    latitude = Column(Float, nullable=True)
+    longitude = Column(Float, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
 

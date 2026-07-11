@@ -97,6 +97,9 @@ def submit_test_result(session_id: str, payload: TestResultIn, db: DBSession = D
 
     db.add(TestResult(session_id=session.id, test_type=payload.test_type, raw_value=payload.raw_value))
     session.pending_test = None
+    if payload.latitude is not None and payload.longitude is not None:
+        session.latitude = payload.latitude
+        session.longitude = payload.longitude
     db.commit()
 
     session = _run_agent_turn_or_502(

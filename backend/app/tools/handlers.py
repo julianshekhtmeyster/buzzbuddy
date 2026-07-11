@@ -90,6 +90,8 @@ _TWILIO_TRIAL_FALLBACK_BODY = "sms_customer_support"
 def notify_contact(db: DBSession, session: AgentSession, args: dict) -> dict:
     contacts = session.event.user.dd_contacts
     message = args["message"]
+    if session.latitude is not None and session.longitude is not None:
+        message += f"\n\nLocation: https://maps.google.com/?q={session.latitude},{session.longitude}"
 
     twilio_configured = bool(
         settings.twilio_account_sid

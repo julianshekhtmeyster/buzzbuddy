@@ -45,6 +45,8 @@ struct EventOut: Codable {
 struct TestResultIn: Codable {
     var testType: String
     var rawValue: Double
+    var latitude: Double?
+    var longitude: Double?
 }
 
 struct SessionOut: Codable {

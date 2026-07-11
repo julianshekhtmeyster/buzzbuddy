@@ -15,6 +15,7 @@ final class AppState: ObservableObject {
     @Published var session: SessionOut?
 
     private let api = BuzzBuddyAPI()
+    private let locationProvider = LocationProvider()
     private var userId: String?
     private var eventId: String?
 
@@ -73,9 +74,17 @@ final class AppState: ObservableObject {
         isLoading = true
         defer { isLoading = false }
         do {
+            // Best-effort: a denied/unavailable location just means the DD
+            // alert (if the AI escalates) won't include one.
+            let coordinate = await locationProvider.currentLocation()
             let updated = try await api.submitTestResult(
                 sessionId: session.id,
-                TestResultIn(testType: testType, rawValue: rawValue)
+                TestResultIn(
+                    testType: testType,
+                    rawValue: rawValue,
+                    latitude: coordinate?.latitude,
+                    longitude: coordinate?.longitude
+                )
             )
             self.session = updated
             errorMessage = nil
