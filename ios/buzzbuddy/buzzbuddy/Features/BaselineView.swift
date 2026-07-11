@@ -5,7 +5,6 @@
 //  Created by Max DeWeese on 7/11/26.
 //
 
-
 import SwiftUI
 
 /// The one page for everything about the user while sober: their profile
@@ -69,96 +68,22 @@ struct BaselineView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                if needsProfile {
-                    Section("About you") {
-                        TextField("Name", text: $name)
-                        TextField("Weight (lbs)", text: $weightLbs)
-                            .keyboardType(.decimalPad)
-                        HStack {
-                            TextField("Height (ft)", text: $heightFeet)
-                                .keyboardType(.numberPad)
-                            TextField("Height (in)", text: $heightInches)
-                                .keyboardType(.numberPad)
-                        }
-                    }
+            VStack(spacing: 0) {
+                Text("Baseline")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 24)
+                    .padding(.bottom, 14)
 
-                    Section("Designated driver") {
-                        TextField("Name", text: $ddName)
-                        TextField("Phone", text: $ddPhone)
-                            .keyboardType(.phonePad)
-                    }
-
-                    if let error = appState.errorMessage {
-                        Text(error).foregroundStyle(.red)
-                    }
-
-                    Button(appState.isLoading ? "Saving..." : "Save profile") {
-                        submitProfile()
-                    }
-                    .disabled(!canSubmitProfile || appState.isLoading)
-                } else {
-                    Section("Reaction") {
-                        if let ms = displayedReactionMs {
-                            Text("\(Int(ms)) ms")
-                        } else {
-                            Text("Not set").foregroundStyle(.secondary)
-                        }
-                        Button(displayedReactionMs == nil ? "Run test" : "Retest") {
-                            showReactionBaselineTest = true
-                        }
-                        .disabled(appState.isLoading)
-                    }
-
-                    Section("Balance") {
-                        if let score = displayedGyroScore {
-                            Text(String(format: "%.2f", score))
-                        } else {
-                            Text("Not set").foregroundStyle(.secondary)
-                        }
-                        Button(displayedGyroScore == nil ? "Run test" : "Retest") {
-                            showGyroBaselineTest = true
-                        }
-                        .disabled(appState.isLoading)
-                    }
-
-                    Section("Memory") {
-                        if let percent = displayedMemoryPercent {
-                            Text("\(Int(percent))% accurate")
-                        } else {
-                            Text("Not set").foregroundStyle(.secondary)
-                        }
-                        Button(displayedMemoryPercent == nil ? "Run test" : "Retest") {
-                            showMemoryBaselineTest = true
-                        }
-                        .disabled(appState.isLoading)
-                    }
-
-                    Section("Walking") {
-                        if let score = displayedGaitScore {
-                            Text(String(format: "%.2f", score))
-                        } else {
-                            Text("Not set").foregroundStyle(.secondary)
-                        }
-                        Button(displayedGaitScore == nil ? "Run test" : "Retest") {
-                            showGaitBaselineTest = true
-                        }
-                        .disabled(appState.isLoading)
-                    }
-
-                    if !hasServerBaseline
-                        && (pendingReactionMs != nil || pendingGyroScore != nil || pendingMemoryPercent != nil) {
-                        Text("All three are needed before your baseline is saved.")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    if let error = appState.baselineErrorMessage {
-                        Text(error).foregroundStyle(.red)
-                    }
+                ScrollView {
+                    content
+                        .padding(.horizontal, 12)
+                        .padding(.top, 16)
+                        .padding(.bottom, 24)
                 }
             }
-            .navigationTitle("Baseline")
+            .toolbar(.hidden, for: .navigationBar)
         }
         .sheet(isPresented: $showReactionBaselineTest) {
             ReactionGame { ms in
@@ -185,6 +110,251 @@ struct BaselineView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var content: some View {
+        if needsProfile {
+            profileContent
+        } else {
+            baselineContent
+        }
+    }
+
+    // MARK: - Profile (onboarding)
+
+    private var profileContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionGroup(title: "About you") {
+                formField(icon: "person.fill", text: $name, placeholder: "Name")
+                formField(icon: "scalemass.fill", text: $weightLbs, placeholder: "Weight (lbs)", keyboardType: .decimalPad)
+                heightField
+            }
+
+            sectionGroup(title: "Designated driver") {
+                formField(icon: "person.crop.circle", text: $ddName, placeholder: "Name")
+                formField(icon: "phone.fill", text: $ddPhone, placeholder: "Phone", keyboardType: .phonePad)
+            }
+
+            if let error = appState.errorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .padding(.leading, 4)
+            }
+
+            saveProfileButton
+        }
+    }
+
+    private var heightField: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "ruler.fill")
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+
+            TextField("Height (ft)", text: $heightFeet)
+                .font(.system(size: 16))
+                .keyboardType(.numberPad)
+
+            Divider()
+                .frame(height: 18)
+
+            TextField("Height (in)", text: $heightInches)
+                .font(.system(size: 16))
+                .keyboardType(.numberPad)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+
+    private var saveProfileButton: some View {
+        HStack {
+            Spacer()
+            Button {
+                submitProfile()
+            } label: {
+                Text(appState.isLoading ? "Saving..." : "Save profile")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(canSubmitProfile && !appState.isLoading ? .white : Color.gray)
+                    .padding(.horizontal, 36)
+                    .padding(.vertical, 14)
+                    .background(
+                        Capsule()
+                            .fill(
+                                canSubmitProfile && !appState.isLoading
+                                    ? Color.yellow
+                                    : Color.yellow.opacity(0.35)
+                            )
+                    )
+            }
+            .disabled(!canSubmitProfile || appState.isLoading)
+        }
+        .padding(.top, 12)
+    }
+
+    // MARK: - Baseline tests
+
+    private var baselineContent: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            sectionGroup(title: "Tests") {
+                testRow(
+                    icon: "bolt.fill",
+                    title: "Reaction",
+                    value: displayedReactionMs.map { "\(Int($0)) ms" },
+                    isRetest: displayedReactionMs != nil
+                ) {
+                    showReactionBaselineTest = true
+                }
+                testRow(
+                    icon: "figure.stand",
+                    title: "Balance",
+                    value: displayedGyroScore.map { String(format: "%.2f", $0) },
+                    isRetest: displayedGyroScore != nil
+                ) {
+                    showGyroBaselineTest = true
+                }
+                testRow(
+                    icon: "brain.head.profile",
+                    title: "Memory",
+                    value: displayedMemoryPercent.map { "\(Int($0))% accurate" },
+                    isRetest: displayedMemoryPercent != nil
+                ) {
+                    showMemoryBaselineTest = true
+                }
+                testRow(
+                    icon: "figure.walk",
+                    title: "Walking",
+                    value: displayedGaitScore.map { String(format: "%.2f", $0) },
+                    isRetest: displayedGaitScore != nil
+                ) {
+                    showGaitBaselineTest = true
+                }
+            }
+
+            if !hasServerBaseline
+                && (pendingReactionMs != nil || pendingGyroScore != nil || pendingMemoryPercent != nil) {
+                Text("All three are needed before your baseline is saved.")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .padding(.leading, 4)
+            }
+
+            if let error = appState.baselineErrorMessage {
+                Text(error)
+                    .font(.footnote)
+                    .foregroundStyle(.red)
+                    .padding(.leading, 4)
+            }
+        }
+    }
+
+    // MARK: - Shared row builders
+
+    private func sectionGroup<Content: View>(
+        title: String,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title.uppercased())
+                .font(.caption)
+                .fontWeight(.semibold)
+                .tracking(0.8)
+                .foregroundStyle(.secondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: 10) {
+                content()
+            }
+        }
+    }
+
+    private func formField(
+        icon: String,
+        text: Binding<String>,
+        placeholder: String,
+        keyboardType: UIKeyboardType = .default
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+
+            TextField(placeholder, text: text)
+                .font(.system(size: 16))
+                .keyboardType(keyboardType)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+
+    private func testRow(
+        icon: String,
+        title: String,
+        value: String?,
+        isRetest: Bool,
+        action: @escaping () -> Void
+    ) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+                .frame(width: 20)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(title)
+                    .font(.system(size: 15))
+                    .foregroundStyle(.primary)
+
+                Text(value ?? "Not set")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Button(action: action) {
+                Text(isRetest ? "Retest" : "Run test")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(appState.isLoading ? Color.gray : .white)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
+                    .background(
+                        Capsule()
+                            .fill(appState.isLoading ? Color.yellow.opacity(0.35) : Color.yellow)
+                    )
+            }
+            .buttonStyle(.plain)
+            .disabled(appState.isLoading)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color(.secondarySystemBackground))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(Color(.systemGray4), lineWidth: 1)
+        )
+    }
+
+    // MARK: - Actions
 
     private func submitProfile() {
         guard OnboardingValidation.isValidWeightLbs(weightLbs),
