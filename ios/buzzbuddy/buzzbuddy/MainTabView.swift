@@ -7,6 +7,29 @@
 
 import SwiftUI
 
+// MARK: - Tab bar height plumbing
+
+private struct TabBarHeightPreferenceKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+private struct TabBarHeightEnvironmentKey: EnvironmentKey {
+    static let defaultValue: CGFloat = 0
+}
+
+extension EnvironmentValues {
+    /// The custom tab bar's measured height (not the safe-area inset,
+    /// just the visible bar row). Any screen can read this to pad
+    /// bottom-pinned content so it clears the bar, without guessing.
+    var tabBarHeight: CGFloat {
+        get { self[TabBarHeightEnvironmentKey.self] }
+        set { self[TabBarHeightEnvironmentKey.self] = newValue }
+    }
+}
+
 struct MainTabView: View {
 
     enum Tab {
@@ -14,11 +37,10 @@ struct MainTabView: View {
     }
 
     @State private var selectedTab: Tab = .events
+    @State private var tabBarHeight: CGFloat = 0
 
     var body: some View {
         ZStack(alignment: .bottom) {
-
-            // Content
             Group {
                 switch selectedTab {
                 case .events:
@@ -34,9 +56,18 @@ struct MainTabView: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .ignoresSafeArea(edges: .bottom)
+            .environment(\.tabBarHeight, tabBarHeight)
 
             CustomTabBar(selectedTab: $selectedTab)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear
+                            .preference(key: TabBarHeightPreferenceKey.self, value: geo.size.height)
+                    }
+                )
+        }
+        .onPreferenceChange(TabBarHeightPreferenceKey.self) { height in
+            tabBarHeight = height
         }
     }
 }
@@ -95,7 +126,7 @@ private struct CustomTabBar: View {
             }
         }
         .frame(height: barContentHeight)
-        .background(.bar)
+        .background(.bar, ignoresSafeAreaEdges: .bottom)
     }
 }
 
