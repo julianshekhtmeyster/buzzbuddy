@@ -68,7 +68,8 @@ struct MainTabView: View {
         }
         .onPreferenceChange(TabBarHeightPreferenceKey.self) { height in
             tabBarHeight = height
-        }.ignoresSafeArea(.keyboard, edges: .bottom)
+        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 
@@ -146,7 +147,7 @@ private struct TabBarButton: View {
                 Text(title)
                     .font(.system(size: 10, weight: .medium))
             }
-            .foregroundStyle(isSelected ? Color.accentColor : Color.secondary)
+            .foregroundStyle(isSelected ? .purple : .secondary)
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
@@ -172,12 +173,14 @@ private struct MiddleTabButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .stroke(Color.accentColor.opacity(0.25), lineWidth: ringPadding)
-                    .frame(width: circleDiameter + ringPadding * 2,
-                           height: circleDiameter + ringPadding * 2)
+                    .stroke(Color.yellow.opacity(0.25), lineWidth: ringPadding)
+                    .frame(
+                        width: circleDiameter + ringPadding * 2,
+                        height: circleDiameter + ringPadding * 2
+                    )
 
                 Circle()
-                    .fill(Color.accentColor)
+                    .fill(Color.yellow)
                     .frame(width: circleDiameter, height: circleDiameter)
 
                 Image(systemName: icon)
