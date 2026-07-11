@@ -77,6 +77,8 @@ class TestEngine: ObservableObject {
     func nextGame() {
 
         currentIndex += 1
+        print(currentIndex)
+        print(selectedGames.count )
 
     }
 
