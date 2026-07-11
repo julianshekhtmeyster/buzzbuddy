@@ -5,7 +5,10 @@ that gets fed back to the model as the tool result.
 """
 
 from sqlalchemy.orm import Session as DBSession
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
 
+from ..config import settings
 from ..models import AgentSession, TestResult
 
 
@@ -79,13 +82,32 @@ def request_test(db: DBSession, session: AgentSession, args: dict) -> dict:
 
 def notify_contact(db: DBSession, session: AgentSession, args: dict) -> dict:
     contacts = session.event.user.dd_contacts
-    # Stub: swap for a real SMS/push integration (Twilio, APNs) before demo day.
+    message = args["message"]
+
+    twilio_configured = bool(
+        settings.twilio_account_sid and settings.twilio_auth_token and settings.twilio_from_number
+    )
+    client = Client(settings.twilio_account_sid, settings.twilio_auth_token) if twilio_configured else None
+
+    results = []
     for contact in contacts:
-        print(f"[NOTIFY] {contact.name} ({contact.phone_number or contact.email}): {args['message']}")
+        if not contact.phone_number:
+            results.append({"contact": contact.name, "sent": False, "reason": "no phone number on file"})
+            continue
+        if client is None:
+            print(f"[NOTIFY-STUB] Twilio not configured. Would text {contact.name} ({contact.phone_number}): {message}")
+            results.append({"contact": contact.name, "sent": False, "reason": "Twilio not configured"})
+            continue
+        try:
+            client.messages.create(to=contact.phone_number, from_=settings.twilio_from_number, body=message)
+            results.append({"contact": contact.name, "sent": True})
+        except TwilioRestException as e:
+            results.append({"contact": contact.name, "sent": False, "reason": str(e)})
+
     session.notified = True
     db.add(session)
     db.commit()
-    return {"acknowledged": True, "notified_count": len(contacts)}
+    return {"acknowledged": True, "results": results}
 
 
 HANDLERS = {

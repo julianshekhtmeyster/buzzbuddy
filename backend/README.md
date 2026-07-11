@@ -21,8 +21,19 @@ point at a real DigitalOcean Managed Postgres instance for deployment, set
 ## Getting a Model Access Key
 
 DO console -> **Inference** -> **Serverless Inference** -> **Get Started** tab
--> **Create a Model Access Key**. Paste it into `.env` as
-`DIGITAL_OCEAN_MODEL_ACCESS_KEY`.
+-> **Create a Model Access Key**. Select "All models" so the key isn't scoped
+to a single model. Paste it into `.env` as `DIGITAL_OCEAN_MODEL_ACCESS_KEY`.
+
+## Setting up DD notifications (Twilio)
+
+`notify_contact` sends a real SMS via Twilio when configured. Without
+`TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_FROM_NUMBER` set, it
+degrades gracefully to a console log (`[NOTIFY-STUB] ...`) so the agent loop
+still runs end-to-end without a Twilio account. To send real texts: create a
+Twilio account, grab the Account SID + Auth Token from the console home page,
+buy/use a trial phone number under **Phone Numbers -> Manage -> Active
+Numbers**, and fill in all three `.env` values. Trial accounts can only text
+verified numbers — verify the DD's number in the Twilio console first.
 
 ## API flow
 

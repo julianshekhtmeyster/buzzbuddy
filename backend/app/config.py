@@ -10,5 +10,9 @@ class Settings(BaseSettings):
     do_model_name: str = "anthropic-claude-4.6-sonnet"
     do_base_url: str = "https://inference.do-ai.run/v1/"
 
+    twilio_account_sid: str = ""
+    twilio_auth_token: str = ""
+    twilio_from_number: str = ""
+
 
 settings = Settings()

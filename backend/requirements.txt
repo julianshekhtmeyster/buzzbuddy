@@ -8,3 +8,4 @@ pydantic
 pydantic-settings
 openai
 python-dotenv
+twilio
