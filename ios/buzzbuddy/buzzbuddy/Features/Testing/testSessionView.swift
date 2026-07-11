@@ -1,5 +1,5 @@
 //
-//  testEngine.swift
+//  testSessionView.swift
 //  buzzbuddy
 //
 //  Created by Max DeWeese on 7/10/26.
@@ -12,6 +12,7 @@ struct TestSessionView: View {
     @EnvironmentObject var engine: TestEngine
     
     @State private var showDisclaimer = true
+    @State private var showForm = false
     
     
     var body: some View {
@@ -47,6 +48,10 @@ struct TestSessionView: View {
                 }
                 .padding()
                 
+            } else if showForm {
+                
+                TestFormView()
+                
             } else {
                 
                 if let game = engine.currentGame {
@@ -79,7 +84,10 @@ struct TestSessionView: View {
                     
                 } else {
                     
-                    Text("Test Complete")
+                    Color.clear
+                        .onAppear {
+                            testFinished()
+                        }
                     
                 }
             }
@@ -87,8 +95,16 @@ struct TestSessionView: View {
     }
     
     
+    func testFinished() {
+        if engine.doForm {
+            showForm = true
+        }
+    }
+    
+    
     func exitTest() {
         engine.currentIndex = 100000
         showDisclaimer = true
+        showForm = false
     }
 }
