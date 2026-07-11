@@ -170,7 +170,7 @@ private struct AIReasoningText: View {
                 }
             }
         }
-        .font(.body)
+        .font(.system(.body, design: .monospaced))
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .onAppear {
             if lines.isEmpty { onRevealFinished() }

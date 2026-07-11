@@ -29,7 +29,7 @@ struct VerdictView: View {
                     // distinct from the per-round trace below.
                     if let summary = session.finalSummary, !summary.isEmpty {
                         Text(summary)
-                            .font(.body)
+                            .font(.system(.body, design: .monospaced))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
@@ -37,7 +37,7 @@ struct VerdictView: View {
                     DisclosureGroup("Full reasoning") {
                         VStack(alignment: .leading, spacing: 8) {
                             ForEach(session.reasoningLog, id: \.self) { line in
-                                Text("• \(line)").font(.footnote)
+                                Text("• \(line)").font(.system(.footnote, design: .monospaced))
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
