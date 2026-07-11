@@ -2,6 +2,7 @@ import SwiftUI
 
 struct VerdictView: View {
     @EnvironmentObject var appState: AppState
+    @Environment(\.dismiss) private var dismiss
     @State private var showDDCompanionPreview = false
 
     var body: some View {
@@ -48,6 +49,22 @@ struct VerdictView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+
+                    // fullScreenCover has no built-in dismiss (no swipe-down,
+                    // no back button) -- without this, finishing a check-in
+                    // leaves the user stuck here with no way back to the tabs.
+                    Button {
+                        appState.discardSession()
+                        dismiss()
+                    } label: {
+                        Text("Done")
+                            .font(.title3.bold())
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 6)
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.top, 8)
                 }
             }
             .padding()

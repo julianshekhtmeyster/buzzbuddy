@@ -3,7 +3,8 @@ import SwiftUI
 struct StartEventView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.dismiss) private var dismiss
-    @State private var eventName = "Tonight"
+    @StateObject private var eventStore = EventStore.shared
+    @State private var selectedEvent: Event?
 
     /// The backend rejects event creation with no baseline on file (there's
     /// nothing to detect deviation from) -- check client-side first so the
@@ -17,22 +18,42 @@ struct StartEventView: View {
     var body: some View {
         VStack(spacing: 16) {
             if hasBaseline {
-                Text("Baseline set. Ready to start your event?")
+                Text("What event are you at right now?")
                     .font(.title3)
                     .multilineTextAlignment(.center)
 
-                TextField("Event name", text: $eventName)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal)
+                if eventStore.events.isEmpty {
+                    Text("Add an event on the Events tab first.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
 
-                Button(appState.isLoading ? "Starting..." : "Start my night") {
-                    Task { await appState.startEvent(name: eventName) }
-                }
-                .buttonStyle(.borderedProminent)
-                .disabled(appState.isLoading)
+                    Button("Go to the Events tab") {
+                        dismiss()
+                    }
+                    .buttonStyle(.borderedProminent)
+                } else {
+                    Picker("Event", selection: $selectedEvent) {
+                        Text("Select an event").tag(Event?.none)
+                        ForEach(eventStore.events) { event in
+                            Text(event.name).tag(Optional(event))
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .buttonStyle(.bordered)
 
-                if let error = appState.errorMessage {
-                    Text(error).foregroundStyle(.red)
+                    Button(appState.isLoading ? "Starting..." : "Go") {
+                        guard let selectedEvent else { return }
+                        Task { await appState.startEvent(name: selectedEvent.name) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .disabled(appState.isLoading || selectedEvent == nil)
+
+                    if let error = appState.errorMessage {
+                        Text(error).foregroundStyle(.red)
+                    }
                 }
             } else {
                 Text("Set your sober baseline before starting a check-in.")

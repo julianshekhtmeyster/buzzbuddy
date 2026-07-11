@@ -11,7 +11,7 @@ import Contacts
 
 // MARK: - Location Model
 
-struct EventLocation: Equatable, Codable {
+struct EventLocation: Hashable, Codable {
     var name: String
     var address: String
     var coordinate: CLLocationCoordinate2D
@@ -21,6 +21,15 @@ struct EventLocation: Equatable, Codable {
         lhs.address == rhs.address &&
         lhs.coordinate.latitude == rhs.coordinate.latitude &&
         lhs.coordinate.longitude == rhs.coordinate.longitude
+    }
+
+    // CLLocationCoordinate2D doesn't conform to Hashable, so this can't be
+    // synthesized -- hash the same fields == compares on.
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(name)
+        hasher.combine(address)
+        hasher.combine(coordinate.latitude)
+        hasher.combine(coordinate.longitude)
     }
 
     private enum CodingKeys: String, CodingKey {

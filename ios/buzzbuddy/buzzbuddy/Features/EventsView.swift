@@ -10,7 +10,7 @@ import MapKit
 
 // MARK: - Event Model
 
-struct Event: Identifiable, Codable {
+struct Event: Identifiable, Hashable, Codable {
     let id: UUID
     var name: String
     var location: EventLocation?
