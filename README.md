@@ -25,8 +25,7 @@ deshare, taxi, or public transit.
 <!-- Add reaction/balance/memory test screenshots here -->
 <!-- Add verdict screen screenshot here -->
 
-No screenshots, GIFs, or App Store assets currently exist in this repository. See [Recommended repository improvements](#recommended-repository-improvements-not-part-of-this-readme) at the b
-ottom for suggestions.
+No screenshots, GIFs, or App Store assets currently exist in this repository. See [Recommended repository improvements](#recommended-repository-improvements-not-part-of-this-readme) at the bottom for suggestions.
 
 ---
 
